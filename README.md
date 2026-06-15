@@ -50,3 +50,21 @@ Copy `.env.example` to `.env` before running locally or with Docker. **All `VITE
 | `VITE_HISTORY_PAGE_SIZE` | Suggestion history pagination |
 | `VITE_DEFAULT_MIN_MATCH_PERCENT` | Default match % slider |
 | `VITE_LIBRETRANSLATE_URL` | Optional LibreTranslate URL |
+
+## Tests
+
+```bash
+npm install
+npm run typecheck
+npm run lint
+npm run test
+```
+
+### CI checks
+
+On every push to `main` and on pull requests, GitHub Actions runs:
+
+- `npm run typecheck` — TypeScript (`tsc`)
+- `npm run lint` — ESLint
+- `npm run test` — Vitest component and unit tests
+- `npm run build` — production build
