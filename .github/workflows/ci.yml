@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+          VITE_INGREDIENT_PAGE_SIZE: "12"
+          VITE_RECIPE_CATALOG_PAGE_SIZE: "6"
+          VITE_SUGGESTIONS_PAGE_SIZE: "4"
+          VITE_HISTORY_PAGE_SIZE: "12"
+          VITE_DEFAULT_MIN_MATCH_PERCENT: "50"
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+          VITE_INGREDIENT_PAGE_SIZE: "12"
+          VITE_RECIPE_CATALOG_PAGE_SIZE: "6"
+          VITE_SUGGESTIONS_PAGE_SIZE: "4"
+          VITE_HISTORY_PAGE_SIZE: "12"
+          VITE_DEFAULT_MIN_MATCH_PERCENT: "50"
