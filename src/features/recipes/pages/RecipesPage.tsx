@@ -86,6 +86,7 @@ function RecipesPageContent({ config }: { config: PublicConfig }) {
   const translatedRecipesError = useApiMessage(recipesError);
   const translatedSuggestionsError = useApiMessage(suggestionsError);
   const translatedSuggestionMessage = useApiMessage(suggestionsData?.message ?? null);
+  const translatedAiMessage = useApiMessage(suggestionsData?.ai_message ?? null);
 
   useEffect(() => {
     if (translatedRecipesError) toast.error(translatedRecipesError);
@@ -196,6 +197,12 @@ function RecipesPageContent({ config }: { config: PublicConfig }) {
         {translatedSuggestionMessage && allSuggestions.length === 0 && !suggestionsLoading && (
           <p className="rounded-xl bg-white/70 px-4 py-3 text-sm text-stone-600 dark:bg-stone-900/70 dark:text-stone-400">
             {translatedSuggestionMessage}
+          </p>
+        )}
+
+        {translatedAiMessage && aiProposals.length === 0 && !suggestionsLoading && (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+            {translatedAiMessage}
           </p>
         )}
 

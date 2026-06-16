@@ -73,6 +73,9 @@ http.interceptors.response.use(
     const isAuthCall = original?.url?.includes("/auth/") ?? false;
 
     // On 401, try a refresh once, then retry the original request. Never loop on /auth/* calls.
+    // This also handles the gateway's instant permission-revocation 401 (header
+    // X-Auth-Error: token_stale, ClickUp 869dqmbfp): refresh mints a token with the updated
+    // permissions/pv and the retry succeeds (or 403s if the permission is genuinely gone).
     if (status === 401 && original && !original._retried && !isAuthCall) {
       original._retried = true;
       try {
