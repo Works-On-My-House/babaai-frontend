@@ -16,9 +16,13 @@ import { RecipeDetailModal } from "@/features/recipes/components/RecipeDetailMod
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
 import { guestMatch, type GuestMatch } from "@/features/recipes/lib/guestMatch";
 import { recipeApi } from "@/features/recipes/services/recipeApi";
+import { useCategories } from "@/features/recipes/hooks/useCategories";
+import { useFavorites } from "@/features/recipes/hooks/useFavorites";
 import type { DailyPicksResponse, Recipe } from "@/features/recipes/types/recipe";
 import { appEnv, ingredientPageSizeOptions } from "@/config/env";
+import { queryKeys } from "@/lib/queryKeys";
 import { useApiMessage } from "@/lib/translation/useApiMessage";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 
 function splitIngredients(raw: string): string[] {
   return raw
@@ -49,17 +53,20 @@ function filterRecipes(
 export function HomePage() {
   const { t } = useTranslation();
   const { token } = useAuth();
+  const queryClient = useQueryClient();
+
+  const categories = useCategories();
+  const favorites = useFavorites(!!token);
+  const favoriteRecipes = favorites.items;
+  const favoriteCount = favorites.total;
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
-  const [categories, setCategories] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(appEnv.ingredientPageSize);
   const [pages, setPages] = useState(1);
   const [browseLoading, setBrowseLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [favoriteCount, setFavoriteCount] = useState(0);
-  const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
 
   const [featured, setFeatured] = useState<Recipe | null>(null);
   const [daily, setDaily] = useState<DailyPicksResponse | null>(null);
@@ -75,135 +82,91 @@ export function HomePage() {
   const translatedError = useApiMessage(error);
   const translatedDailyMessage = useApiMessage(daily?.message ?? null);
 
-  useEffect(() => {
-    let cancelled = false;
-    recipeApi
-      .categories()
-      .then((items) => {
-        if (!cancelled) setCategories(items);
-      })
-      .catch(() => {
-        if (!cancelled) setCategories([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const usingFavorites = favoritesOnly && !!token;
+  const listParams = useMemo(
+    () => ({
+      page,
+      page_size: pageSize,
+      search: search.trim() || undefined,
+      category: category || undefined,
+    }),
+    [page, pageSize, search, category],
+  );
 
-  useEffect(() => {
-    if (!token) {
-      setFavoriteCount(0);
-      setFavoriteRecipes([]);
-      return;
-    }
-    let cancelled = false;
-    recipeApi
-      .favorites()
-      .then((result) => {
-        if (!cancelled) {
-          setFavoriteCount(result.total);
-          setFavoriteRecipes(result.items);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setFavoriteCount(0);
-          setFavoriteRecipes([]);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+  // Featured + daily + browse-list now flow through React Query (cache / dedup / stale-while-
+  // revalidate), then mirror into local state so the existing optimistic-update, favorites-filter
+  // and guest-match logic stays unchanged.
+  const featuredQuery = useQuery({
+    queryKey: queryKeys.recipes.featured(token ? "auth" : "guest"),
+    queryFn: recipeApi.featured,
+  });
+  const dailyQuery = useQuery({
+    queryKey: queryKeys.recipes.daily(4),
+    queryFn: () => recipeApi.daily(4),
+    enabled: !!token,
+  });
+  const listQuery = useQuery({
+    queryKey: queryKeys.recipes.list(listParams),
+    queryFn: () => recipeApi.list(listParams),
+    enabled: !usingFavorites,
+    placeholderData: keepPreviousData,
+  });
 
   useEffect(() => {
     setPage(1);
   }, [search, category, favoritesOnly, pageSize]);
 
   useEffect(() => {
-    let cancelled = false;
-    setBrowseLoading(true);
-
-    if (favoritesOnly && token) {
+    if (usingFavorites) {
       const filtered = filterRecipes(favoriteRecipes, search, category);
       const nextPages = Math.max(1, Math.ceil(filtered.length / pageSize));
       const currentPage = Math.min(page, nextPages);
       const start = (currentPage - 1) * pageSize;
-      if (!cancelled) {
-        setRecipes(filtered.slice(start, start + pageSize));
-        setCatalogTotal(filtered.length);
-        setPages(nextPages);
-        setBrowseLoading(false);
-        setError(null);
-      }
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    recipeApi
-      .list({
-        page,
-        page_size: pageSize,
-        search: search.trim() || undefined,
-        category: category || undefined,
-      })
-      .then((result) => {
-        if (cancelled) return;
-        setRecipes(result.items);
-        setCatalogTotal(result.total);
-        setPages(result.pages);
-        setError(null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setRecipes([]);
-        setCatalogTotal(0);
-        setPages(1);
-        setError(err instanceof Error ? err.message : "Failed to load recipes");
-      })
-      .finally(() => {
-        if (!cancelled) setBrowseLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [page, pageSize, search, category, favoritesOnly, token, favoriteRecipes]);
-
-  useEffect(() => {
-    let cancelled = false;
-    recipeApi
-      .featured()
-      .then((recipe) => {
-        if (!cancelled) setFeatured(recipe);
-      })
-      .catch(() => {
-        if (!cancelled) setFeatured(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
-      setDaily(null);
+      setRecipes(filtered.slice(start, start + pageSize));
+      setCatalogTotal(filtered.length);
+      setPages(nextPages);
+      setError(null);
+      setBrowseLoading(false);
       return;
     }
-    let cancelled = false;
-    recipeApi
-      .daily(4)
-      .then((result) => {
-        if (!cancelled) setDaily(result);
-      })
-      .catch(() => {
-        if (!cancelled) setDaily(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+    if (listQuery.isLoading) {
+      setBrowseLoading(true);
+      return;
+    }
+    if (listQuery.error) {
+      setRecipes([]);
+      setCatalogTotal(0);
+      setPages(1);
+      setError(listQuery.error instanceof Error ? listQuery.error.message : "Failed to load recipes");
+      setBrowseLoading(false);
+      return;
+    }
+    if (listQuery.data) {
+      setRecipes(listQuery.data.items);
+      setCatalogTotal(listQuery.data.total);
+      setPages(listQuery.data.pages);
+      setError(null);
+      setBrowseLoading(false);
+    }
+  }, [
+    usingFavorites,
+    favoriteRecipes,
+    search,
+    category,
+    page,
+    pageSize,
+    listQuery.data,
+    listQuery.isLoading,
+    listQuery.error,
+  ]);
+
+  useEffect(() => {
+    setFeatured(featuredQuery.data ?? null);
+  }, [featuredQuery.data]);
+
+  useEffect(() => {
+    setDaily(token ? dailyQuery.data ?? null : null);
+  }, [token, dailyQuery.data]);
 
   const matches = useMemo(() => {
     if (myIngredients.length === 0) return null;
@@ -245,12 +208,9 @@ export function HomePage() {
       );
 
       if (!token) return;
-      void recipeApi.favorites().then((result) => {
-        setFavoriteCount(result.total);
-        setFavoriteRecipes(result.items);
-      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.recipes.favorites });
     },
-    [token],
+    [token, queryClient],
   );
 
   const handleOpen = useCallback((recipe: Recipe) => {

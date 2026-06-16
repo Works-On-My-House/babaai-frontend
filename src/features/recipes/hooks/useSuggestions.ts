@@ -1,29 +1,34 @@
-import { useCallback, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 
 import { recipeApi } from "@/features/recipes/services/recipeApi";
 import type { SuggestionRequest, SuggestionResponse } from "@/features/recipes/types/recipe";
 
+/**
+ * Suggestion generation is a user-triggered action (POST), so it's a mutation rather than a cached
+ * query. `generate` keeps the previous contract: returns the response, or null on error (the error
+ * is surfaced via `error`).
+ */
 export function useSuggestions() {
-  const [data, setData] = useState<SuggestionResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useMutation({
+    mutationFn: (params: SuggestionRequest = {}) => recipeApi.generateSuggestions(params),
+  });
 
-  const generate = useCallback(async (params: SuggestionRequest = {}) => {
-    setLoading(true);
-    setError(null);
+  const generate = async (params: SuggestionRequest = {}): Promise<SuggestionResponse | null> => {
     try {
-      const result = await recipeApi.generateSuggestions(params);
-      setData(result);
-      return result;
-    } catch (err) {
-      setData(null);
-      const message = err instanceof Error ? err.message : "Failed to generate suggestions";
-      setError(message);
+      return await mutation.mutateAsync(params);
+    } catch {
       return null;
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
-  return { data, loading, error, generate };
+  return {
+    data: mutation.isError ? null : mutation.data ?? null,
+    loading: mutation.isPending,
+    error: mutation.error
+      ? mutation.error instanceof Error
+        ? mutation.error.message
+        : "Failed to generate suggestions"
+      : null,
+    generate,
+  };
 }

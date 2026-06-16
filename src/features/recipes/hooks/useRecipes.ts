@@ -1,30 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { recipeApi } from "@/features/recipes/services/recipeApi";
-import type { PaginatedRecipes, RecipeListParams } from "@/features/recipes/types/recipe";
+import type { RecipeListParams } from "@/features/recipes/types/recipe";
+import { queryKeys } from "@/lib/queryKeys";
 
 export function useRecipes(params: RecipeListParams) {
-  const [data, setData] = useState<PaginatedRecipes | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: queryKeys.recipes.list(params),
+    queryFn: () => recipeApi.list(params),
+    // Keep showing the previous page while the next loads (smooth pagination).
+    placeholderData: keepPreviousData,
+  });
 
-  const fetchRecipes = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await recipeApi.list(params);
-      setData(result);
-    } catch (err) {
-      setData(null);
-      setError(err instanceof Error ? err.message : "Failed to load recipes");
-    } finally {
-      setLoading(false);
-    }
-  }, [params.page, params.page_size, params.search, params.category]);
-
-  useEffect(() => {
-    void fetchRecipes();
-  }, [fetchRecipes]);
-
-  return { data, loading, error, refetch: fetchRecipes };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error
+        ? query.error.message
+        : "Failed to load recipes"
+      : null,
+    refetch: query.refetch,
+  };
 }
