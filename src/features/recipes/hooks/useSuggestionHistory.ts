@@ -1,33 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { recipeApi } from "@/features/recipes/services/recipeApi";
-import type {
-  PaginatedSuggestionHistory,
-  SuggestionHistoryParams,
-} from "@/features/recipes/types/recipe";
+import type { SuggestionHistoryParams } from "@/features/recipes/types/recipe";
+import { queryKeys } from "@/lib/queryKeys";
 
 export function useSuggestionHistory(params: SuggestionHistoryParams) {
-  const [data, setData] = useState<PaginatedSuggestionHistory | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: queryKeys.recipes.history(params),
+    queryFn: () => recipeApi.history(params),
+    placeholderData: keepPreviousData,
+  });
 
-  const fetchHistory = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await recipeApi.history(params);
-      setData(result);
-    } catch (err) {
-      setData(null);
-      setError(err instanceof Error ? err.message : "Failed to load history");
-    } finally {
-      setLoading(false);
-    }
-  }, [params.page, params.page_size, params.from_date, params.to_date]);
-
-  useEffect(() => {
-    void fetchHistory();
-  }, [fetchHistory]);
-
-  return { data, loading, error, refetch: fetchHistory };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error
+        ? query.error.message
+        : "Failed to load history"
+      : null,
+    refetch: query.refetch,
+  };
 }

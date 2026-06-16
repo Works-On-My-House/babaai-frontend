@@ -1,12 +1,8 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { configApi, type PublicConfig } from "@/features/config/services/configApi";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface AppConfigContextValue {
   config: PublicConfig | null;
@@ -17,41 +13,24 @@ interface AppConfigContextValue {
 const AppConfigContext = createContext<AppConfigContextValue | null>(null);
 
 export function AppConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<PublicConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Public config is semi-static — cache it for 30m so navigations don't refetch (PERF-1.6).
+  const { data, isLoading, error } = useQuery({
+    queryKey: queryKeys.config.public,
+    queryFn: configApi.public,
+    staleTime: 30 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
+  const value: AppConfigContextValue = {
+    config: data ?? null,
+    loading: isLoading,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : "Failed to load application configuration"
+      : null,
+  };
 
-    configApi
-      .public()
-      .then((data) => {
-        if (!cancelled) {
-          setConfig(data);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setConfig(null);
-          setError(err instanceof Error ? err.message : "Failed to load application configuration");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return (
-    <AppConfigContext.Provider value={{ config, loading, error }}>
-      {children}
-    </AppConfigContext.Provider>
-  );
+  return <AppConfigContext.Provider value={value}>{children}</AppConfigContext.Provider>;
 }
 
 export function useAppConfig(): AppConfigContextValue {

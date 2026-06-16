@@ -17,7 +17,7 @@ import { AiProposalCard } from "@/features/recipes/components/AiProposalCard";
 import { SuggestionCard } from "@/features/recipes/components/SuggestionCard";
 import { useRecipes } from "@/features/recipes/hooks/useRecipes";
 import { useSuggestions } from "@/features/recipes/hooks/useSuggestions";
-import { recipeApi } from "@/features/recipes/services/recipeApi";
+import { useCategories } from "@/features/recipes/hooks/useCategories";
 import type { Recipe } from "@/features/recipes/types/recipe";
 import type { EntityId } from "@/types/entity";
 import type { AppLanguage } from "@/i18n";
@@ -41,7 +41,7 @@ function RecipesPageContent({ config }: { config: PublicConfig }) {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
+  const categories = useCategories();
   const [minMatch, setMinMatch] = useState(appEnv.defaultMinMatchPercent);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<EntityId[]>([]);
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<EntityId[]>([]);
@@ -59,13 +59,6 @@ function RecipesPageContent({ config }: { config: PublicConfig }) {
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
-
-  useEffect(() => {
-    recipeApi
-      .categories()
-      .then(setCategories)
-      .catch(() => setCategories([]));
-  }, []);
 
   useEffect(() => {
     setPantryLoading(true);
