@@ -18,6 +18,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const { token, headers, ...rest } = options;
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
+    credentials: "include",
     ...rest,
     headers: {
       ...(rest.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
@@ -84,6 +85,7 @@ export const api = {
 
     return fetch(`${apiBaseUrl}/api/v1/auth/login`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     }).then(async (response) => {
@@ -105,4 +107,6 @@ export const api = {
     request<User>("/api/v1/auth/me", {
       token,
     }),
+
+  logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
 };

@@ -8,7 +8,12 @@ import {
   type ReactNode,
 } from "react";
 
-import { TOKEN_KEY } from "../../api/axios";
+import {
+  AUTH_LOGOUT_EVENT,
+  AUTH_REFRESHED_EVENT,
+  TOKEN_KEY,
+  refreshAccessToken,
+} from "../../api/axios";
 import { api, type User } from "../../api/client";
 
 interface AuthContextValue {
@@ -51,10 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profile = await api.me(token);
         if (!cancelled) setUser(profile);
       } catch {
-        if (!cancelled) {
-          localStorage.removeItem(TOKEN_KEY);
-          setToken(null);
-          setUser(null);
+        // Access token likely expired — try the refresh cookie once before giving up.
+        try {
+          const newToken = await refreshAccessToken();
+          const profile = await api.me(newToken);
+          if (!cancelled) {
+            setToken(newToken);
+            setUser(profile);
+          }
+        } catch {
+          if (!cancelled) {
+            localStorage.removeItem(TOKEN_KEY);
+            setToken(null);
+            setUser(null);
+          }
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -84,9 +99,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    void api.logout().catch(() => {
+      /* best-effort server-side revoke */
+    });
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
+  }, []);
+
+  // React to the axios interceptor: forced logout when a refresh fails, or token refreshed.
+  useEffect(() => {
+    const onLogout = () => {
+      setToken(null);
+      setUser(null);
+    };
+    const onRefreshed = (event: Event) => {
+      const next = (event as CustomEvent<string>).detail;
+      if (next) setToken(next);
+    };
+    window.addEventListener(AUTH_LOGOUT_EVENT, onLogout);
+    window.addEventListener(AUTH_REFRESHED_EVENT, onRefreshed);
+    return () => {
+      window.removeEventListener(AUTH_LOGOUT_EVENT, onLogout);
+      window.removeEventListener(AUTH_REFRESHED_EVENT, onRefreshed);
+    };
   }, []);
 
   const value = useMemo(
