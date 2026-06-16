@@ -105,6 +105,7 @@ export interface SuggestionResponse {
   pages: number;
   message?: string | null;
   ai_proposals?: AiRecipeProposal[];
+  ai_message?: string | null;
 }
 
 export interface SuggestionRequest {
