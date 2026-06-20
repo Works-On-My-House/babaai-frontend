@@ -10,15 +10,16 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { BrowseRecipeCard } from "@/features/recipes/components/BrowseRecipeCard";
 import { CategoryFilterChips } from "@/features/recipes/components/CategoryFilterChips";
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
-import { DailyPickCard } from "@/features/recipes/components/DailyPickCard";
 import { PaginationControls } from "@/features/recipes/components/PaginationControls";
 import { RecipeDetailModal } from "@/features/recipes/components/RecipeDetailModal";
+import { TodaySection } from "@/features/recipes/components/TodaySection";
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
 import { guestMatch, type GuestMatch } from "@/features/recipes/lib/guestMatch";
 import { recipeApi } from "@/features/recipes/services/recipeApi";
 import { useCategories } from "@/features/recipes/hooks/useCategories";
 import { useFavorites } from "@/features/recipes/hooks/useFavorites";
-import type { DailyPicksResponse, Recipe } from "@/features/recipes/types/recipe";
+import { useToday } from "@/features/recipes/hooks/useToday";
+import type { Recipe, TodaySuggestions } from "@/features/recipes/types/recipe";
 import { appEnv, ingredientPageSizeOptions } from "@/config/env";
 import { queryKeys } from "@/lib/queryKeys";
 import { useApiMessage } from "@/lib/translation/useApiMessage";
@@ -59,6 +60,7 @@ export function HomePage() {
   const favorites = useFavorites(!!token);
   const favoriteRecipes = favorites.items;
   const favoriteCount = favorites.total;
+  const todayQuery = useToday(!!token, 4);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -69,7 +71,7 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [featured, setFeatured] = useState<Recipe | null>(null);
-  const [daily, setDaily] = useState<DailyPicksResponse | null>(null);
+  const [today, setToday] = useState<TodaySuggestions | null>(null);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -80,7 +82,6 @@ export function HomePage() {
 
   const browseRef = useRef<HTMLDivElement>(null);
   const translatedError = useApiMessage(error);
-  const translatedDailyMessage = useApiMessage(daily?.message ?? null);
 
   const usingFavorites = favoritesOnly && !!token;
   const listParams = useMemo(
@@ -99,11 +100,6 @@ export function HomePage() {
   const featuredQuery = useQuery({
     queryKey: queryKeys.recipes.featured(token ? "auth" : "guest"),
     queryFn: recipeApi.featured,
-  });
-  const dailyQuery = useQuery({
-    queryKey: queryKeys.recipes.daily(4),
-    queryFn: () => recipeApi.daily(4),
-    enabled: !!token,
   });
   const listQuery = useQuery({
     queryKey: queryKeys.recipes.list(listParams),
@@ -165,8 +161,8 @@ export function HomePage() {
   }, [featuredQuery.data]);
 
   useEffect(() => {
-    setDaily(token ? dailyQuery.data ?? null : null);
-  }, [token, dailyQuery.data]);
+    setToday(token ? todayQuery.data ?? null : null);
+  }, [token, todayQuery.data]);
 
   const matches = useMemo(() => {
     if (myIngredients.length === 0) return null;
@@ -201,7 +197,7 @@ export function HomePage() {
       setRecipes((current) => current.map(patch));
       setFeatured((current) => (current ? patch(current) : current));
       setOpenRecipe((current) => (current ? patch(current) : current));
-      setDaily((current) =>
+      setToday((current) =>
         current
           ? { ...current, items: current.items.map((item) => ({ ...item, recipe: patch(item.recipe) })) }
           : current,
@@ -311,38 +307,9 @@ export function HomePage() {
           </p>
         )}
 
-        {/* Personalised daily picks (logged in) */}
-        {token && daily && (
-          <section className="mt-10">
-            <div className="mb-3">
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                {t("home.dailyTitle")}
-              </h2>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                {translatedDailyMessage || t("home.dailyDesc")}
-              </p>
-            </div>
-            {daily.items.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {daily.items.map((pick, index) => (
-                  <div
-                    key={pick.recipe.id}
-                    className="animate-slide-up"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <DailyPickCard pick={pick} onOpen={handleOpen} onFavoriteChange={applyFavorite} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-stone-200 bg-white/50 p-6 text-center text-sm text-stone-600 dark:border-stone-600 dark:bg-stone-900/50 dark:text-stone-400">
-                {t("home.dailyEmpty")}{" "}
-                <Link to="/ingredients" className="font-medium text-amber-700 hover:underline dark:text-amber-400">
-                  {t("nav.ingredients")}
-                </Link>
-              </div>
-            )}
-          </section>
+        {/* "Today for you" personalized daily suggestions (logged in) */}
+        {token && today && (
+          <TodaySection data={today} onOpen={handleOpen} onFavoriteChange={applyFavorite} />
         )}
 
         {/* Recipe of the day */}

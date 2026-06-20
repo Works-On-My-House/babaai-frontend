@@ -12,6 +12,7 @@
     "dashboard": "Dashboard",
     "ingredients": "Ingredients",
     "aiSuggestions": "AI Suggestions",
+    "preferences": "Taste profile",
     "signOut": "Sign out",
     "signIn": "Sign in",
     "register": "Register"
@@ -62,6 +63,20 @@
     },
     "footerCta": "Ready to cook smarter?",
     "footerCtaDesc": "Create a free account to build your pantry, add ingredients, and get personalized AI recipe suggestions."
+  },
+  "today": {
+    "title": "Today for you",
+    "subtitle": "Fresh picks based on your pantry, taste profile, and what's about to expire.",
+    "personalize": "Personalize",
+    "readyToCook": "Ready to cook",
+    "empty": "Add ingredients to your pantry to get personalized suggestions.",
+    "reasons": {
+      "expiring": "Use it up",
+      "ready": "Ready to cook",
+      "almost": "Almost there",
+      "taste": "Matches your taste",
+      "popular": "Popular pick"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -213,6 +228,17 @@
       "favorites_one": "{{count}} favorite",
       "favorites_other": "{{count}} favorites"
     },
+    "nutrition": {
+      "title": "Nutrition",
+      "perServing": "per serving",
+      "calories": "Calories",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "kcalValue": "{{calories}} kcal",
+      "kcalBadge": "{{calories}} kcal",
+      "approx": "Approximate values — nutrition data is incomplete."
+    },
     "generateTitle": "Generate suggestions",
     "generateDesc": "Choose pantry ingredients to include, optionally filter by selected catalog recipes, then generate ranked matches with quantity checks.",
     "minMatch": "Min match",
@@ -283,6 +309,46 @@
     "pagination": {
       "suggestions": "suggestions",
       "recipes": "recipes"
+    }
+  },
+  "preferences": {
+    "title": "Taste profile",
+    "subtitle": "Tell us what you love, what to avoid, and any dietary needs. We'll personalize your daily suggestions.",
+    "preferredIngredients": "Favorite ingredients",
+    "preferredIngredientsHint": "Add ingredients you'd love to cook with more often.",
+    "dislikedIngredients": "Ingredients to avoid",
+    "dislikedIngredientsHint": "We'll steer suggestions away from these.",
+    "ingredientPlaceholder": "Type an ingredient and press Enter…",
+    "preferredCategories": "Favorite categories",
+    "preferredCategoriesHint": "Pick the kinds of dishes you enjoy most.",
+    "categoriesEmpty": "No categories available yet.",
+    "dietaryTags": "Dietary preferences",
+    "dietaryTagsHint": "Select any diets you follow.",
+    "allergens": "Allergens to avoid",
+    "allergensHint": "We'll flag and avoid recipes containing these.",
+    "removeTag": "Remove {{tag}}",
+    "save": "Save taste profile",
+    "saving": "Saving…",
+    "dietary": {
+      "vegetarian": "Vegetarian",
+      "vegan": "Vegan",
+      "pescatarian": "Pescatarian",
+      "gluten_free": "Gluten-free",
+      "dairy_free": "Dairy-free"
+    },
+    "allergen": {
+      "dairy": "Dairy",
+      "gluten": "Gluten",
+      "nuts": "Nuts",
+      "peanuts": "Peanuts",
+      "shellfish": "Shellfish",
+      "fish": "Fish",
+      "eggs": "Eggs",
+      "soy": "Soy"
+    },
+    "toast": {
+      "saved": "Taste profile saved",
+      "saveFailed": "Failed to save taste profile"
     }
   }
 }

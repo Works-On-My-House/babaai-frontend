@@ -6,6 +6,16 @@ export interface RecipeIngredient extends BaseEntity {
   unit: string;
 }
 
+/** Per-serving nutrition for a recipe. All macro values may be null when data is unavailable. */
+export interface RecipeNutrition {
+  calories: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  complete: boolean;
+  servings: number | null;
+}
+
 export interface Recipe extends BaseEntity {
   name: string;
   category: string;
@@ -14,6 +24,7 @@ export interface Recipe extends BaseEntity {
   view_count: number;
   favorite_count: number;
   is_favorite: boolean;
+  nutrition?: RecipeNutrition | null;
 }
 
 export interface FavoriteResponse {
@@ -41,6 +52,27 @@ export interface DailyPick {
 export interface DailyPicksResponse {
   items: DailyPick[];
   generated_for: string;
+  message: string | null;
+}
+
+/**
+ * Reasons a recipe was suggested in the "Today for you" feed.
+ * "expiring" is the waste-reduction hero (uses pantry items about to expire).
+ */
+export type TodayReason = "expiring" | "ready" | "almost" | "taste" | "popular";
+
+export interface TodayItem {
+  recipe: Recipe;
+  match_percent: number;
+  can_prepare: boolean;
+  score: number;
+  reasons: TodayReason[];
+  missing_ingredients: string[];
+}
+
+export interface TodaySuggestions {
+  generated_for: string;
+  items: TodayItem[];
   message: string | null;
 }
 
