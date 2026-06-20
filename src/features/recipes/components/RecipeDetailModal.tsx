@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/AuthContext";
 import { FavoriteButton } from "@/features/recipes/components/FavoriteButton";
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
+import { NutritionPanel } from "@/features/recipes/components/NutritionPanel";
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
 import type { GuestMatch } from "@/features/recipes/lib/guestMatch";
 import type { Recipe } from "@/features/recipes/types/recipe";
@@ -134,6 +135,8 @@ export function RecipeDetailModal({ recipe, match, onClose, onFavoriteChange }: 
               ))}
             </ul>
           </section>
+
+          <NutritionPanel nutrition={recipe.nutrition} />
 
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
