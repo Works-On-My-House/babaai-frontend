@@ -95,6 +95,27 @@ export interface TodaySuggestions {
   message: string | null;
 }
 
+/**
+ * One rescue recipe in the "Use it up" feed (ClickUp 869dtvycn). Surfaces recipes that consume
+ * pantry items about to expire so the user cooks them before they spoil.
+ */
+export interface RescueItem {
+  recipe: Recipe;
+  match_percent: number;
+  can_prepare: boolean;
+  /** Which of the user's expiring pantry items THIS recipe uses up. */
+  rescued_ingredients: string[];
+  missing_ingredients: string[];
+}
+
+export interface RescueResponse {
+  generated_for: string;
+  /** All of the user's pantry items expiring within the rescue window. */
+  expiring_ingredients: string[];
+  items: RescueItem[];
+  message: string | null;
+}
+
 export interface RecipeListParams {
   page?: number;
   page_size?: number;

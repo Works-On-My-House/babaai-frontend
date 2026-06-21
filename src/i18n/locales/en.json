@@ -79,6 +79,18 @@
       "popular": "Popular pick"
     }
   },
+  "rescue": {
+    "title_one": "Use it up — {{count}} item expiring soon",
+    "title_other": "Use it up — {{count}} items expiring soon",
+    "subtitle": "Cook these before they spoil and cut down on food waste.",
+    "expiringLabel": "Expiring soon:",
+    "rescuesLabel": "Rescues:",
+    "readyToCook": "Ready to cook",
+    "viewRecipe": "View recipe",
+    "noMatches": "Nothing in the catalog matches your expiring items right now — try adding more pantry staples.",
+    "rescuesCount_one": "Uses up {{count}} expiring item",
+    "rescuesCount_other": "Uses up {{count}} expiring items"
+  },
   "settings": {
     "title": "Settings",
     "theme": "Theme",

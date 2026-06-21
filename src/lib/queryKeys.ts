@@ -19,6 +19,7 @@ export const queryKeys = {
     featured: (scope: string) => ["recipes", "featured", scope] as const,
     daily: (limit: number) => ["recipes", "daily", limit] as const,
     today: (limit: number) => ["recipes", "today", limit] as const,
+    rescue: (limit: number) => ["recipes", "rescue", limit] as const,
     history: (params: SuggestionHistoryParams) => ["recipes", "history", params] as const,
   },
   preferences: {
