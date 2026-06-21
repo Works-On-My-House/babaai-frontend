@@ -28,4 +28,8 @@ export const queryKeys = {
     all: ["ingredients"] as const,
     list: (params: IngredientListParams) => ["ingredients", "list", params] as const,
   },
+  recipeImports: {
+    all: ["recipeImports"] as const,
+    mine: ["recipeImports", "mine"] as const,
+  },
 } as const;

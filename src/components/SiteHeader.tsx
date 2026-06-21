@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Tune } from "@mui/icons-material";
+import { Tune, UploadFileOutlined } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 
 import { Button } from "@/components/ui/Button";
@@ -57,6 +57,24 @@ export function SiteHeader() {
         </nav>
 
         <div className="order-2 flex items-center gap-2 sm:order-3">
+          {token && (
+            <Tooltip title={t("nav.submitRecipe")}>
+              <NavLink
+                to="/submit-recipe"
+                aria-label={t("nav.submitRecipe")}
+                className={({ isActive }) =>
+                  [
+                    "inline-flex items-center justify-center rounded-lg p-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400",
+                    isActive
+                      ? "bg-amber-100/90 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+                      : "text-stone-600 hover:bg-white/60 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-stone-100",
+                  ].join(" ")
+                }
+              >
+                <UploadFileOutlined fontSize="small" />
+              </NavLink>
+            </Tooltip>
+          )}
           {token && (
             <Tooltip title={t("nav.preferences")}>
               <NavLink

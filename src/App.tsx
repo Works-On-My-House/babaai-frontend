@@ -7,6 +7,7 @@ import { RegisterPage } from "./features/auth/RegisterPage";
 import { HomePage } from "./features/home/pages/HomePage";
 import { IngredientsPage } from "./features/ingredients/pages/IngredientsPage";
 import { PreferencesPage } from "./features/preferences/pages/PreferencesPage";
+import { SubmitRecipePage } from "./features/recipeImports/pages/SubmitRecipePage";
 import { RecipesPage } from "./features/recipes/pages/RecipesPage";
 import { SuggestionHistoryPage } from "./features/recipes/pages/SuggestionHistoryPage";
 import { AppLayout } from "./layouts/AppLayout";
@@ -26,6 +27,7 @@ function App() {
             <Route path="preferences" element={<PreferencesPage />} />
             <Route path="recipes" element={<RecipesPage />} />
             <Route path="recipes/history" element={<SuggestionHistoryPage />} />
+            <Route path="submit-recipe" element={<SubmitRecipePage />} />
           </Route>
         </Route>
       </Route>
