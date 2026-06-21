@@ -70,8 +70,8 @@ export function SceneBackground({ scene, children, className = "" }: SceneBackgr
       const viewH = window.innerHeight - headerHeightPx();
       const maxPan = Math.max(0, scaledHeight - viewH);
 
-      // Pantry pages are usually short — skip artificial padding to avoid layout jitter.
-      if (scene === "pantry") {
+      // Cover scenes (pantry, taste) fill the viewport — skip pan padding to avoid layout jitter.
+      if (scene === "pantry" || scene === "taste") {
         if (scrollPadRef.current !== 0) {
           scrollPadRef.current = 0;
           setScrollPad(0);
@@ -110,15 +110,16 @@ export function SceneBackground({ scene, children, className = "" }: SceneBackgr
     };
   }, [scaledHeight, scene]);
 
-  const isPantryHero = scene === "pantry";
+  // Cover scenes fill the viewport at center; others pan vertically with scroll.
+  const isCover = scene === "pantry" || scene === "taste";
 
   const imageStyle: CSSProperties = {
     top: HEADER_OFFSET,
     backgroundImage: `url(${src})`,
     filter: sceneFilter(scene, isDark),
     backgroundRepeat: "no-repeat",
-    backgroundSize: isPantryHero ? "cover" : "100% auto",
-    backgroundPosition: isPantryHero ? "center center" : `center ${-panY}px`,
+    backgroundSize: isCover ? "cover" : "100% auto",
+    backgroundPosition: isCover ? "center center" : `center ${-panY}px`,
   };
 
   return (

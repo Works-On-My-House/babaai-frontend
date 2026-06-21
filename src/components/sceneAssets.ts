@@ -1,6 +1,8 @@
 export const SCENE_IMAGES = {
   pantry: "/images/pantry-scene.png",
   kitchen: "/images/kitchen-scene.png",
+  // Cozy "grandma's kitchen" backdrop for the taste-profile / preferences page.
+  taste: "/images/taste-profile-scene.png",
 } as const;
 
 export type SceneKey = keyof typeof SCENE_IMAGES;
