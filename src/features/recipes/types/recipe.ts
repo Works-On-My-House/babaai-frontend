@@ -33,6 +33,25 @@ export interface FavoriteResponse {
   favorite_count: number;
 }
 
+/** One pantry line deducted by cooking a recipe. `quantity` is null when the amount is unknown. */
+export interface ConsumedLine {
+  product_name: string;
+  quantity: number | null;
+  unit: string;
+}
+
+/**
+ * Result of marking a recipe as cooked (ClickUp 869dtvyct): the backend deducts the recipe's
+ * ingredients from the user's pantry. `consumed` are the deducted lines; `unmatched_ingredients`
+ * are recipe ingredients with no pantry match, so the user can adjust those manually.
+ */
+export interface CookedResponse {
+  recipe_id: EntityId;
+  recipe_name: string;
+  consumed: ConsumedLine[];
+  unmatched_ingredients: string[];
+}
+
 export interface FavoriteListResponse {
   items: Recipe[];
   total: number;
