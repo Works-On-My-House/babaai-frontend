@@ -223,6 +223,16 @@
       "failed": "Couldn't update favorites",
       "signInToSave": "Sign in to save favorites"
     },
+    "cooked": {
+      "button": "Cooked it",
+      "pending": "Cooking…",
+      "toast": {
+        "success": "Cooked! Deducted from pantry: {{items}}",
+        "successNoDeduction": "Cooked! Nothing was deducted from your pantry.",
+        "unmatched": "Couldn't auto-deduct: {{items}}",
+        "failed": "Couldn't mark this recipe as cooked"
+      }
+    },
     "meta": {
       "views_one": "{{count}} view",
       "views_other": "{{count}} views",

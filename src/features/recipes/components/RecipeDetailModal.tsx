@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { TranslatedText } from "@/components/TranslatedText";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/AuthContext";
+import { CookedItButton } from "@/features/recipes/components/CookedItButton";
 import { FavoriteButton } from "@/features/recipes/components/FavoriteButton";
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
 import { NutritionPanel } from "@/features/recipes/components/NutritionPanel";
@@ -96,16 +97,19 @@ export function RecipeDetailModal({ recipe, match, onClose, onFavoriteChange }: 
                 {t("recipes.meta.favorites", { count: recipe.favorite_count })}
               </span>
             </div>
-            <FavoriteButton
-              recipeId={recipe.id}
-              isFavorite={recipe.is_favorite}
-              favoriteCount={recipe.favorite_count}
-              variant="plain"
-              showCount
-              onChange={(isFavorite, favoriteCount) =>
-                onFavoriteChange?.(recipe.id, isFavorite, favoriteCount)
-              }
-            />
+            <div className="flex items-center gap-2">
+              {token && <CookedItButton recipeId={recipe.id} />}
+              <FavoriteButton
+                recipeId={recipe.id}
+                isFavorite={recipe.is_favorite}
+                favoriteCount={recipe.favorite_count}
+                variant="plain"
+                showCount
+                onChange={(isFavorite, favoriteCount) =>
+                  onFavoriteChange?.(recipe.id, isFavorite, favoriteCount)
+                }
+              />
+            </div>
           </div>
 
           {showMatch && (

@@ -1,5 +1,6 @@
 import { http } from "@/api/axios";
 import type {
+  CookedResponse,
   DailyPicksResponse,
   FavoriteListResponse,
   FavoriteResponse,
@@ -70,6 +71,19 @@ export const recipeApi = {
 
   recordView: async (id: string): Promise<Recipe> => {
     const { data } = await http.post<Recipe>(`/api/v1/recipes/${id}/view`);
+    return data;
+  },
+
+  /**
+   * Marks a recipe as cooked (ClickUp 869dtvyct): the backend deducts the recipe's ingredients
+   * from the user's pantry and logs it. `servings` is optional — omit it (sends `{}`) for the
+   * default single batch.
+   */
+  markCooked: async (id: string, servings?: number): Promise<CookedResponse> => {
+    const { data } = await http.post<CookedResponse>(
+      `/api/v1/recipes/${id}/cooked`,
+      servings != null ? { servings } : {},
+    );
     return data;
   },
 
