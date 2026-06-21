@@ -7,6 +7,7 @@ import type {
   PaginatedSuggestionHistory,
   Recipe,
   RecipeListParams,
+  RescueResponse,
   SuggestionHistoryParams,
   SuggestionRequest,
   SuggestionResponse,
@@ -63,6 +64,13 @@ export const recipeApi = {
 
   today: async (limit = 4): Promise<TodaySuggestions> => {
     const { data } = await http.get<TodaySuggestions>("/api/v1/recipes/today", {
+      params: { limit },
+    });
+    return data;
+  },
+
+  rescue: async (limit = 5): Promise<RescueResponse> => {
+    const { data } = await http.get<RescueResponse>("/api/v1/recipes/rescue", {
       params: { limit },
     });
     return data;

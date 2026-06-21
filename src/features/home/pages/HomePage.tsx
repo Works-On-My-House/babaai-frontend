@@ -12,14 +12,16 @@ import { CategoryFilterChips } from "@/features/recipes/components/CategoryFilte
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
 import { PaginationControls } from "@/features/recipes/components/PaginationControls";
 import { RecipeDetailModal } from "@/features/recipes/components/RecipeDetailModal";
+import { RescueSection } from "@/features/recipes/components/RescueSection";
 import { TodaySection } from "@/features/recipes/components/TodaySection";
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
 import { guestMatch, type GuestMatch } from "@/features/recipes/lib/guestMatch";
 import { recipeApi } from "@/features/recipes/services/recipeApi";
 import { useCategories } from "@/features/recipes/hooks/useCategories";
 import { useFavorites } from "@/features/recipes/hooks/useFavorites";
+import { useRescue } from "@/features/recipes/hooks/useRescue";
 import { useToday } from "@/features/recipes/hooks/useToday";
-import type { Recipe, TodaySuggestions } from "@/features/recipes/types/recipe";
+import type { Recipe, RescueResponse, TodaySuggestions } from "@/features/recipes/types/recipe";
 import { appEnv, ingredientPageSizeOptions } from "@/config/env";
 import { queryKeys } from "@/lib/queryKeys";
 import { useApiMessage } from "@/lib/translation/useApiMessage";
@@ -61,6 +63,7 @@ export function HomePage() {
   const favoriteRecipes = favorites.items;
   const favoriteCount = favorites.total;
   const todayQuery = useToday(!!token, 4);
+  const rescueQuery = useRescue(!!token, 5);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -72,6 +75,7 @@ export function HomePage() {
 
   const [featured, setFeatured] = useState<Recipe | null>(null);
   const [today, setToday] = useState<TodaySuggestions | null>(null);
+  const [rescue, setRescue] = useState<RescueResponse | null>(null);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -164,6 +168,10 @@ export function HomePage() {
     setToday(token ? todayQuery.data ?? null : null);
   }, [token, todayQuery.data]);
 
+  useEffect(() => {
+    setRescue(token ? rescueQuery.data ?? null : null);
+  }, [token, rescueQuery.data]);
+
   const matches = useMemo(() => {
     if (myIngredients.length === 0) return null;
     const map = new Map<string, GuestMatch>();
@@ -198,6 +206,11 @@ export function HomePage() {
       setFeatured((current) => (current ? patch(current) : current));
       setOpenRecipe((current) => (current ? patch(current) : current));
       setToday((current) =>
+        current
+          ? { ...current, items: current.items.map((item) => ({ ...item, recipe: patch(item.recipe) })) }
+          : current,
+      );
+      setRescue((current) =>
         current
           ? { ...current, items: current.items.map((item) => ({ ...item, recipe: patch(item.recipe) })) }
           : current,
@@ -305,6 +318,12 @@ export function HomePage() {
           <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
             {translatedError}
           </p>
+        )}
+
+        {/* "Use it up" rescue — recipes for pantry items about to expire (logged in). Hidden
+            entirely when nothing is expiring (RescueSection returns null). */}
+        {token && rescue && (
+          <RescueSection data={rescue} onOpen={handleOpen} onFavoriteChange={applyFavorite} />
         )}
 
         {/* "Today for you" personalized daily suggestions (logged in) */}
