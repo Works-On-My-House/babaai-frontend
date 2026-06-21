@@ -12,6 +12,7 @@
     "dashboard": "Dashboard",
     "ingredients": "Ingredients",
     "aiSuggestions": "AI Suggestions",
+    "submitRecipe": "Submit a recipe",
     "preferences": "Taste profile",
     "signOut": "Sign out",
     "signIn": "Sign in",
@@ -349,6 +350,29 @@
     "toast": {
       "saved": "Taste profile saved",
       "saveFailed": "Failed to save taste profile"
+    }
+  },
+  "recipeImports": {
+    "title": "Submit a recipe",
+    "subtitle": "Upload a recipe and our team will review it before it joins the catalog.",
+    "fileLabel": "Recipe file",
+    "acceptedTypesHint": "Upload a recipe file (e.g. JSON or CSV). PDFs and photos are coming soon.",
+    "submit": "Submit recipe",
+    "submitting": "Uploading…",
+    "clear": "Clear",
+    "mySubmissions": "My submissions",
+    "submittedOn": "Submitted {{date}}",
+    "reviewNote": "Reviewer note",
+    "emptyTitle": "No submissions yet",
+    "emptyDesc": "Upload a recipe file above to send it for review.",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "toast": {
+      "submitted": "Recipe submitted for review",
+      "submitFailed": "Failed to submit recipe"
     }
   }
 }
