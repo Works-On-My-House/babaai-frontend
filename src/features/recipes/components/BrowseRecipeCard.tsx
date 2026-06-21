@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { TranslatedText } from "@/components/TranslatedText";
 import { FavoriteButton } from "@/features/recipes/components/FavoriteButton";
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
+import { NutritionBadge } from "@/features/recipes/components/NutritionBadge";
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
 import type { GuestMatch } from "@/features/recipes/lib/guestMatch";
 import type { Recipe } from "@/features/recipes/types/recipe";
@@ -59,15 +60,16 @@ export function BrowseRecipeCard({ recipe, match, onOpen, onFavoriteChange }: Br
             }
           />
         </div>
-        {showMatch && (
-          <span
-            className={`absolute bottom-2 left-3 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow ${matchTone(
-              match!.percent,
-            )}`}
-          >
-            {t("home.matchLabel", { percent: match!.percent })}
-          </span>
-        )}
+        <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+          {showMatch && (
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold shadow ${matchTone(match!.percent)}`}
+            >
+              {t("home.matchLabel", { percent: match!.percent })}
+            </span>
+          )}
+          <NutritionBadge nutrition={recipe.nutrition} />
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col p-4">

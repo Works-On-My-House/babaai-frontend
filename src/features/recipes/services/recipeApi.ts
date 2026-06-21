@@ -10,6 +10,7 @@ import type {
   SuggestionHistoryParams,
   SuggestionRequest,
   SuggestionResponse,
+  TodaySuggestions,
 } from "@/features/recipes/types/recipe";
 
 function buildListParams(params: RecipeListParams): Record<string, string | number> {
@@ -55,6 +56,13 @@ export const recipeApi = {
 
   daily: async (limit = 4): Promise<DailyPicksResponse> => {
     const { data } = await http.get<DailyPicksResponse>("/api/v1/recipes/daily", {
+      params: { limit },
+    });
+    return data;
+  },
+
+  today: async (limit = 4): Promise<TodaySuggestions> => {
+    const { data } = await http.get<TodaySuggestions>("/api/v1/recipes/today", {
       params: { limit },
     });
     return data;
