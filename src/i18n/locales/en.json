@@ -13,6 +13,9 @@
     "ingredients": "Ingredients",
     "aiSuggestions": "AI Suggestions",
     "submitRecipe": "Submit a recipe",
+    "shoppingList": "Shopping list",
+    "mealPlan": "Meal planner",
+    "moderation": "Moderation queue",
     "preferences": "Taste profile",
     "signOut": "Sign out",
     "signIn": "Sign in",
@@ -395,6 +398,123 @@
     "toast": {
       "submitted": "Recipe submitted for review",
       "submitFailed": "Failed to submit recipe"
+    }
+  },
+  "forbidden": {
+    "title": "Access denied",
+    "description": "You don't have permission to view this page. If you think this is a mistake, contact an administrator.",
+    "backHome": "Back to home"
+  },
+  "adminModeration": {
+    "title": "Moderation queue",
+    "subtitle": "Review user-submitted recipe uploads and approve or reject each one.",
+    "emptyTitle": "Nothing to review",
+    "emptyDesc": "There are no pending submissions right now. New uploads will appear here.",
+    "queue": {
+      "count_one": "{{count}} pending submission",
+      "count_other": "{{count}} pending submissions",
+      "submittedBy": "By {{name}} · {{date}}"
+    },
+    "detail": {
+      "title": "Review submission",
+      "parsedDraft": "Parsed draft",
+      "originalFile": "Original file",
+      "download": "Download",
+      "ingredients": "Ingredients",
+      "steps": "Steps",
+      "noDraft": "No draft could be extracted from this file yet.",
+      "noIngredients": "No ingredients were extracted.",
+      "noSteps": "No steps were extracted.",
+      "fileUnavailable": "Couldn't load the original file.",
+      "noPreview": "No inline preview for this file type. Use download to view it.",
+      "loadFailed": "Couldn't load this submission.",
+      "approve": "Approve",
+      "approving": "Approving…",
+      "reject": "Reject",
+      "rejecting": "Rejecting…",
+      "confirmReject": "Confirm reject",
+      "rejectNoteLabel": "Reason for rejection (sent to the submitter)",
+      "rejectNotePlaceholder": "e.g. The ingredients list is incomplete…"
+    },
+    "toast": {
+      "approved": "Submission approved",
+      "approveFailed": "Couldn't approve this submission",
+      "rejected": "Submission rejected",
+      "rejectFailed": "Couldn't reject this submission"
+    }
+  },
+  "shoppingList": {
+    "title": "Shopping list",
+    "subtitle": "Turn the ingredients you're missing into a list you can tick off at the store.",
+    "emptyTitle": "No shopping lists yet",
+    "emptyDesc": "Add missing ingredients from a recipe or suggestion to create your first list.",
+    "listEmpty": "This list is empty. Add an item below.",
+    "otherGroup": "Other",
+    "addMissing": "Add missing to list",
+    "addMissingFromRecipe": "Add missing ingredients to shopping list",
+    "adding": "Adding…",
+    "itemCount": "{{checked}} of {{total}} checked",
+    "clearChecked": "Clear checked",
+    "deleteList": "Delete list",
+    "itemName": "Item",
+    "itemNamePlaceholder": "e.g. Olive oil",
+    "quantity": "Qty",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g. g, ml",
+    "addItem": "Add",
+    "toggleItem": "Toggle {{name}}",
+    "quantityFor": "Quantity for {{name}}",
+    "deleteItem": "Delete {{name}}",
+    "toast": {
+      "generated": "Added to your shopping list",
+      "generateFailed": "Couldn't build the shopping list",
+      "addFailed": "Couldn't add the item",
+      "updateFailed": "Couldn't update the item",
+      "deleteFailed": "Couldn't delete the item",
+      "clearedChecked": "Checked items cleared",
+      "listDeleted": "Shopping list deleted"
+    }
+  },
+  "mealPlan": {
+    "title": "Meal planner",
+    "subtitle": "Plan your week and see at a glance what you can already cook from your pantry.",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "thisWeek": "This week",
+    "generateWeekList": "Generate week shopping list",
+    "generatingList": "Generating…",
+    "weekListName": "Meal plan {{range}}",
+    "assignTo": "Add to {{slot}}",
+    "removeEntry": "Remove {{name}}",
+    "slots": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner"
+    },
+    "readiness": {
+      "ready": "Ready",
+      "missing_one": "{{count}} missing",
+      "missing_other": "{{count}} missing"
+    },
+    "assign": {
+      "title": "Add a recipe",
+      "searchPlaceholder": "Search recipes…",
+      "noResults": "No recipes match your search."
+    },
+    "upsell": {
+      "badge": "Premium",
+      "title": "Plan your whole week with Meal Planner",
+      "subtitle": "Meal Planner is a premium feature. Upgrade to organize your week and generate shopping lists in one tap.",
+      "benefit1": "Drag recipes into a 7-day calendar",
+      "benefit2": "See pantry readiness for every planned meal",
+      "benefit3": "Generate a shopping list for the whole week",
+      "cta": "Upgrade to Premium",
+      "comingSoon": "Upgrades are coming soon."
+    },
+    "toast": {
+      "assignFailed": "Couldn't add the recipe to your plan",
+      "moveFailed": "Couldn't move the meal",
+      "removeFailed": "Couldn't remove the meal"
     }
   }
 }

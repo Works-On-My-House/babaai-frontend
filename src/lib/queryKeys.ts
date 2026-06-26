@@ -33,4 +33,19 @@ export const queryKeys = {
     all: ["recipeImports"] as const,
     mine: ["recipeImports", "mine"] as const,
   },
+  adminImports: {
+    all: ["adminImports"] as const,
+    pending: ["adminImports", "pending"] as const,
+    detail: (id: string) => ["adminImports", "detail", id] as const,
+    file: (id: string) => ["adminImports", "file", id] as const,
+  },
+  shoppingLists: {
+    all: ["shoppingLists"] as const,
+    list: ["shoppingLists", "list"] as const,
+    detail: (id: string) => ["shoppingLists", "detail", id] as const,
+  },
+  mealPlan: {
+    all: ["mealPlan"] as const,
+    week: (weekStart: string) => ["mealPlan", "week", weekStart] as const,
+  },
 } as const;

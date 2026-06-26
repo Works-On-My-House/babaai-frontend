@@ -61,6 +61,17 @@ export interface User {
   created_at: string;
   updated_at: string;
   version: number;
+  /**
+   * Effective permission keys (e.g. "RECIPE_MODERATE"). Exposed by the backend via /auth/me
+   * once roles/permissions are populated (ClickUp 869dqfawy). Optional until that ships — the
+   * frontend also falls back to the JWT `permissions` claim, so an absent field means "none".
+   */
+  roles?: string[];
+  permissions?: string[];
+  /** Subscription tier driving premium gating (e.g. "free" | "premium"). */
+  tier?: string;
+  /** Fine-grained entitlement keys, when the backend models premium features individually. */
+  entitlements?: string[];
 }
 
 export interface RegisterPayload {

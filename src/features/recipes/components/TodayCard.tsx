@@ -4,6 +4,7 @@ import { TranslatedText } from "@/components/TranslatedText";
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
 import { FavoriteButton } from "@/features/recipes/components/FavoriteButton";
 import { NutritionBadge } from "@/features/recipes/components/NutritionBadge";
+import { GenerateListButton } from "@/features/shoppingList/components/GenerateListButton";
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
 import type { Recipe, TodayItem, TodayReason } from "@/features/recipes/types/recipe";
 
@@ -114,6 +115,15 @@ export function TodayCard({ item, onOpen, onFavoriteChange }: TodayCardProps) {
             {t("home.viewRecipe")} →
           </span>
         </div>
+
+        {!item.can_prepare && item.missing_ingredients.length > 0 && (
+          <div className="mt-3">
+            <GenerateListButton
+              input={{ recipe_id: recipe.id, product_names: item.missing_ingredients }}
+              className="w-full"
+            />
+          </div>
+        )}
       </div>
     </article>
   );
