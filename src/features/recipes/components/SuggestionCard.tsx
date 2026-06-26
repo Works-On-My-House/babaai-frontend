@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { TranslatedText } from "@/components/TranslatedText";
+import { GenerateListButton } from "@/features/shoppingList/components/GenerateListButton";
 import type { IngredientMatchDetail, SuggestionItem } from "@/features/recipes/types/recipe";
 
 interface SuggestionCardProps {
@@ -96,6 +97,17 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
           ))}
         </ul>
       </div>
+
+      {suggestion.missing_ingredients.length > 0 && (
+        <div className="mt-4 flex justify-end">
+          <GenerateListButton
+            input={{
+              recipe_id: suggestion.recipe_id,
+              product_names: suggestion.missing_ingredients,
+            }}
+          />
+        </div>
+      )}
     </article>
   );
 }

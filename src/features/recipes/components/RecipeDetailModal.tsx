@@ -9,6 +9,7 @@ import { CookedItButton } from "@/features/recipes/components/CookedItButton";
 import { FavoriteButton } from "@/features/recipes/components/FavoriteButton";
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
 import { NutritionPanel } from "@/features/recipes/components/NutritionPanel";
+import { GenerateListButton } from "@/features/shoppingList/components/GenerateListButton";
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
 import type { GuestMatch } from "@/features/recipes/lib/guestMatch";
 import type { Recipe } from "@/features/recipes/types/recipe";
@@ -138,6 +139,14 @@ export function RecipeDetailModal({ recipe, match, onClose, onFavoriteChange }: 
                 </li>
               ))}
             </ul>
+            {token && (
+              <div className="mt-3 flex justify-end">
+                <GenerateListButton
+                  input={{ recipe_id: recipe.id }}
+                  label={t("shoppingList.addMissingFromRecipe")}
+                />
+              </div>
+            )}
           </section>
 
           <NutritionPanel nutrition={recipe.nutrition} />
