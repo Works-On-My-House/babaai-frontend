@@ -4,11 +4,12 @@ import { ingredientApi } from "@/features/ingredients/services/ingredientApi";
 import type { IngredientListParams } from "@/features/ingredients/types/ingredient";
 import { queryKeys } from "@/lib/queryKeys";
 
-export function useIngredients(params: IngredientListParams) {
+export function useIngredients(params: IngredientListParams, enabled = true) {
   const query = useQuery({
     queryKey: queryKeys.ingredients.list(params),
     queryFn: () => ingredientApi.list(params),
     placeholderData: keepPreviousData,
+    enabled,
   });
 
   return {
