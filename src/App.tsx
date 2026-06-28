@@ -12,6 +12,7 @@ import { IngredientsPage } from "./features/ingredients/pages/IngredientsPage";
 import { MealPlanPage } from "./features/mealPlan/pages/MealPlanPage";
 import { PreferencesPage } from "./features/preferences/pages/PreferencesPage";
 import { SubmitRecipePage } from "./features/recipeImports/pages/SubmitRecipePage";
+import { FavoritesPage } from "./features/recipes/pages/FavoritesPage";
 import { RecipesPage } from "./features/recipes/pages/RecipesPage";
 import { SuggestionHistoryPage } from "./features/recipes/pages/SuggestionHistoryPage";
 import { ShoppingListPage } from "./features/shoppingList/pages/ShoppingListPage";
@@ -32,6 +33,7 @@ function App() {
             <Route path="preferences" element={<PreferencesPage />} />
             <Route path="recipes" element={<RecipesPage />} />
             <Route path="recipes/history" element={<SuggestionHistoryPage />} />
+            <Route path="favorites" element={<FavoritesPage />} />
             <Route path="submit-recipe" element={<SubmitRecipePage />} />
             <Route path="shopping-list" element={<ShoppingListPage />} />
             <Route path="meal-plan" element={<MealPlanPage />} />

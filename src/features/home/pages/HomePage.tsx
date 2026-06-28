@@ -1,27 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { SceneBackground } from "@/components/SceneBackground";
-import { TranslatedText } from "@/components/TranslatedText";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/AuthContext";
+import { useEntitlements } from "@/features/auth/useEntitlements";
+import { HeroSection } from "@/features/home/components/HeroSection";
+import { HomeSidebar } from "@/features/home/components/HomeSidebar";
+import { PantryGlanceSection } from "@/features/home/components/PantryGlanceSection";
+import { PriorityUseRow } from "@/features/home/components/PriorityUseRow";
+import { computePantryStats, computeRecipeCoverage } from "@/features/home/lib/pantryStats";
+import { pantryLastUpdated } from "@/features/home/lib/pantryLastUpdated";
+import { useIngredients } from "@/features/ingredients/hooks/useIngredients";
+import { useMealPlan } from "@/features/mealPlan/hooks/useMealPlan";
+import { startOfWeek } from "@/features/mealPlan/lib/week";
 import { BrowseRecipeCard } from "@/features/recipes/components/BrowseRecipeCard";
-import { CategoryFilterChips } from "@/features/recipes/components/CategoryFilterChips";
-import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
 import { PaginationControls } from "@/features/recipes/components/PaginationControls";
 import { RecipeDetailModal } from "@/features/recipes/components/RecipeDetailModal";
-import { RescueSection } from "@/features/recipes/components/RescueSection";
-import { TodaySection } from "@/features/recipes/components/TodaySection";
-import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
+import { TodayCard } from "@/features/recipes/components/TodayCard";
 import { guestMatch, type GuestMatch } from "@/features/recipes/lib/guestMatch";
 import { recipeApi } from "@/features/recipes/services/recipeApi";
 import { useCategories } from "@/features/recipes/hooks/useCategories";
 import { useFavorites } from "@/features/recipes/hooks/useFavorites";
-import { useRescue } from "@/features/recipes/hooks/useRescue";
 import { useToday } from "@/features/recipes/hooks/useToday";
-import type { Recipe, RescueResponse, TodaySuggestions } from "@/features/recipes/types/recipe";
+import type { PaginatedRecipes, Recipe, TodaySuggestions } from "@/features/recipes/types/recipe";
 import { appEnv, ingredientPageSizeOptions } from "@/config/env";
 import { queryKeys } from "@/lib/queryKeys";
 import { useApiMessage } from "@/lib/translation/useApiMessage";
@@ -36,11 +40,7 @@ function splitIngredients(raw: string): string[] {
 
 const PAGE_SIZE_OPTIONS = ingredientPageSizeOptions();
 
-function filterRecipes(
-  list: Recipe[],
-  search: string,
-  category: string,
-): Recipe[] {
+function filterRecipes(list: Recipe[], search: string, category: string): Recipe[] {
   const term = search.trim().toLowerCase();
   return list.filter((recipe) => {
     const matchesCategory = !category || recipe.category === category;
@@ -55,15 +55,27 @@ function filterRecipes(
 
 export function HomePage() {
   const { t } = useTranslation();
-  const { token } = useAuth();
+  const { user, token } = useAuth();
+  const { isPremium } = useEntitlements();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
 
   const categories = useCategories();
   const favorites = useFavorites(!!token);
   const favoriteRecipes = favorites.items;
-  const favoriteCount = favorites.total;
-  const todayQuery = useToday(!!token, 4);
-  const rescueQuery = useRescue(!!token, 5);
+  const todayQuery = useToday(!!token, 6);
+
+  const weekStart = startOfWeek();
+  const pantryQuery = useIngredients(
+    {
+      page: 1,
+      page_size: 500,
+      sort_by: "expiration_date",
+      sort_order: "asc",
+    },
+    !!token,
+  );
+  const mealPlanQuery = useMealPlan(weekStart, !!token && isPremium);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -73,19 +85,48 @@ export function HomePage() {
   const [browseLoading, setBrowseLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [featured, setFeatured] = useState<Recipe | null>(null);
   const [today, setToday] = useState<TodaySuggestions | null>(null);
-  const [rescue, setRescue] = useState<RescueResponse | null>(null);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [category, setCategory] = useState("");
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(
+    () => searchParams.get("favorites") === "1",
+  );
   const [myIngredients, setMyIngredients] = useState<string[]>([]);
   const [ingredientInput, setIngredientInput] = useState("");
   const [openRecipe, setOpenRecipe] = useState<Recipe | null>(null);
 
   const browseRef = useRef<HTMLDivElement>(null);
+  const cookNowRef = useRef<HTMLDivElement>(null);
   const translatedError = useApiMessage(error);
+
+  const pantryItems = pantryQuery.data?.items ?? [];
+  const pantryStats = useMemo(
+    () => (token ? computePantryStats(pantryItems) : null),
+    [token, pantryItems],
+  );
+
+  const recipeCoverage = useMemo(() => {
+    if (!today?.items) return { ready: 0, oneAway: 0, other: 0 };
+    return computeRecipeCoverage(
+      today.items.map((i) => ({
+        can_prepare: i.can_prepare,
+        missing_ingredients: i.missing_ingredients,
+      })),
+    );
+  }, [today]);
+
+  const readyRecipeCount = today?.items.filter((i) => i.can_prepare).length ?? 0;
+
+  const pantryPeakItems = useMemo(() => {
+    if (!pantryStats) return [];
+    return pantryStats.expiringSoon.slice(0, 3).map((i) => i.name);
+  }, [pantryStats]);
+
+  const pantryLastUpdatedAt = useMemo(
+    () => (token ? pantryLastUpdated(pantryItems) : null),
+    [token, pantryItems],
+  );
 
   const usingFavorites = favoritesOnly && !!token;
   const listParams = useMemo(
@@ -98,19 +139,18 @@ export function HomePage() {
     [page, pageSize, search, category],
   );
 
-  // Featured + daily + browse-list now flow through React Query (cache / dedup / stale-while-
-  // revalidate), then mirror into local state so the existing optimistic-update, favorites-filter
-  // and guest-match logic stays unchanged.
-  const featuredQuery = useQuery({
-    queryKey: queryKeys.recipes.featured(token ? "auth" : "guest"),
-    queryFn: recipeApi.featured,
-  });
   const listQuery = useQuery({
     queryKey: queryKeys.recipes.list(listParams),
     queryFn: () => recipeApi.list(listParams),
     enabled: !usingFavorites,
     placeholderData: keepPreviousData,
   });
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearch(q);
+    if (searchParams.get("favorites") === "1") setFavoritesOnly(true);
+  }, [searchParams]);
 
   useEffect(() => {
     setPage(1);
@@ -161,16 +201,8 @@ export function HomePage() {
   ]);
 
   useEffect(() => {
-    setFeatured(featuredQuery.data ?? null);
-  }, [featuredQuery.data]);
-
-  useEffect(() => {
     setToday(token ? todayQuery.data ?? null : null);
   }, [token, todayQuery.data]);
-
-  useEffect(() => {
-    setRescue(token ? rescueQuery.data ?? null : null);
-  }, [token, rescueQuery.data]);
 
   const matches = useMemo(() => {
     if (myIngredients.length === 0) return null;
@@ -178,8 +210,6 @@ export function HomePage() {
     recipes.forEach((recipe) => map.set(recipe.id, guestMatch(recipe, myIngredients)));
     return map;
   }, [recipes, myIngredients]);
-
-  const recipeOfDay = featured;
 
   const visibleRecipes = useMemo(() => {
     if (!matches) return recipes;
@@ -203,20 +233,23 @@ export function HomePage() {
           : recipe;
 
       setRecipes((current) => current.map(patch));
-      setFeatured((current) => (current ? patch(current) : current));
       setOpenRecipe((current) => (current ? patch(current) : current));
       setToday((current) =>
         current
           ? { ...current, items: current.items.map((item) => ({ ...item, recipe: patch(item.recipe) })) }
           : current,
       );
-      setRescue((current) =>
-        current
-          ? { ...current, items: current.items.map((item) => ({ ...item, recipe: patch(item.recipe) })) }
-          : current,
-      );
 
       if (!token) return;
+
+      // Patch the cached recipe-list pages too. `recipes` is mirrored from this cache, so without
+      // this the next refetch (e.g. the favorites invalidation below) re-runs the sync effect and
+      // reverts the optimistic heart back to its stale, un-favorited cached value.
+      queryClient.setQueriesData<PaginatedRecipes>(
+        { queryKey: [...queryKeys.recipes.all, "list"] },
+        (data) => (data ? { ...data, items: data.items.map(patch) } : data),
+      );
+
       void queryClient.invalidateQueries({ queryKey: queryKeys.recipes.favorites });
     },
     [token, queryClient],
@@ -231,7 +264,6 @@ export function HomePage() {
           item.id === updated.id ? { ...item, view_count: updated.view_count } : item;
         setRecipes((current) => current.map(patch));
         setOpenRecipe((current) => (current ? patch(current) : current));
-        setFeatured((current) => (current ? patch(current) : current));
       })
       .catch(() => {
         /* view tracking is best-effort */
@@ -261,306 +293,263 @@ export function HomePage() {
     browseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function scrollToCookNow() {
+    cookNowRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
 
       <SceneBackground scene="kitchen">
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 sm:px-6">
-        {/* Hero */}
-        <section className="relative mt-6 overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-amber-500/95 via-orange-500/95 to-rose-500/95 px-6 py-12 text-white shadow-xl shadow-orange-500/25 backdrop-blur-sm sm:px-12 sm:py-16">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-          <div className="relative max-w-2xl animate-slide-up">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur">
-              ✨ {t("home.heroBadge")}
-            </span>
-            <h1 className="mt-4 text-3xl font-bold leading-tight drop-shadow-sm sm:text-5xl">
-              {t("home.heroTitle")}
-            </h1>
-            <p className="mt-4 max-w-xl text-base text-white/90 sm:text-lg">
-              {t("home.heroSubtitle")}
-            </p>
+          <HeroSection
+            userName={user?.username}
+            recipeCount={readyRecipeCount}
+            pantryPeakItems={pantryPeakItems}
+            search={search}
+            onSearchChange={setSearch}
+            onSearch={scrollToBrowse}
+            onBrowseRecipes={scrollToCookNow}
+            showPantryHealth={!!token}
+            pantryStats={pantryStats}
+            isAuthenticated={!!token}
+          />
 
-            <div className="mt-6 flex max-w-lg items-center gap-2 rounded-2xl bg-white/95 p-1.5 shadow-lg shadow-orange-900/10 backdrop-blur">
-              <span className="pl-3 text-stone-400" aria-hidden>
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
-                </svg>
-              </span>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") scrollToBrowse();
-                }}
-                placeholder={t("home.searchPlaceholder")}
-                className="w-full bg-transparent px-2 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
-              />
-              <Button size="md" variant="primary" onClick={scrollToBrowse}>
-                {t("common.search")}
-              </Button>
+          {error && !browseLoading && (
+            <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {translatedError}
+            </p>
+          )}
+
+          {token && pantryStats && (
+            <PriorityUseRow items={pantryStats.expiringSoon} />
+          )}
+
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
+            <div ref={cookNowRef} className="scroll-mt-20">
+              {token && today ? (
+                <section aria-labelledby="cook-now-heading">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div>
+                      <h2
+                        id="cook-now-heading"
+                        className="font-display text-2xl font-semibold italic text-stone-900 dark:text-stone-100"
+                      >
+                        {t("home.cookNow.title")}
+                      </h2>
+                      <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+                        {t("home.cookNow.subtitle")}
+                      </p>
+                    </div>
+                    <Link
+                      to="/recipes"
+                      className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+                    >
+                      {t("home.cookNow.seeAll")} →
+                    </Link>
+                  </div>
+                  {today.items.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {today.items.map((item, index) => (
+                        <div
+                          key={item.recipe.id}
+                          className="animate-slide-up"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <TodayCard
+                            item={item}
+                            onOpen={handleOpen}
+                            onFavoriteChange={applyFavorite}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-stone-200 bg-white/50 p-6 text-center text-sm text-stone-600 dark:border-stone-600 dark:bg-stone-900/50 dark:text-stone-400">
+                      <p>{t("today.empty")}</p>
+                      <Link
+                        to="/ingredients"
+                        className="mt-1 inline-block font-medium text-amber-700 hover:underline dark:text-amber-400"
+                      >
+                        {t("nav.pantry")}
+                      </Link>
+                    </div>
+                  )}
+                </section>
+              ) : !token ? (
+                <section className="rounded-3xl border border-white/60 bg-gradient-to-br from-white/80 to-amber-50/60 p-6 shadow-sm backdrop-blur-md dark:border-stone-700 dark:from-stone-900/80 dark:to-stone-800/60 sm:p-8">
+                  <div className="flex items-start gap-3">
+                    <span className="text-3xl" aria-hidden>
+                      🧑‍🍳
+                    </span>
+                <div>
+                  <h2 className="font-display text-2xl font-semibold italic text-stone-900 dark:text-stone-100">
+                    {t("home.explorerTitle")}
+                  </h2>
+                      <p className="mt-1 max-w-2xl text-sm text-stone-600 dark:text-stone-400">
+                        {t("home.explorerDesc")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                    <input
+                      value={ingredientInput}
+                      onChange={(e) => setIngredientInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === ",") {
+                          e.preventDefault();
+                          addIngredients(ingredientInput);
+                        }
+                      }}
+                      placeholder={t("home.explorerPlaceholder")}
+                      className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/30 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+                    />
+                    <Button onClick={() => addIngredients(ingredientInput)}>{t("home.explorerAdd")}</Button>
+                    {myIngredients.length > 0 && (
+                      <Button variant="ghost" onClick={() => setMyIngredients([])}>
+                        {t("home.explorerClear")}
+                      </Button>
+                    )}
+                  </div>
+
+                  {myIngredients.length > 0 ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {myIngredients.map((item) => (
+                        <span
+                          key={item}
+                          className="inline-flex animate-fade-in items-center gap-1.5 rounded-full bg-amber-100/90 py-1 pl-3 pr-1.5 text-sm font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                        >
+                          {item}
+                          <button
+                            type="button"
+                            onClick={() => removeIngredient(item)}
+                            className="flex h-5 w-5 items-center justify-center rounded-full text-amber-700 transition hover:bg-amber-200/80 dark:text-amber-300 dark:hover:bg-amber-800/60"
+                            aria-label={t("common.delete")}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">{t("home.explorerHint")}</p>
+                  )}
+
+                  {myIngredients.length > 0 && (
+                    <p className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                      {t("home.sortBest")}
+                    </p>
+                  )}
+                </section>
+              ) : null}
             </div>
 
-            {!token && (
-              <div className="mt-5 flex flex-wrap gap-3">
+            {token && (
+              <HomeSidebar
+                todayEntries={mealPlanQuery.data?.entries ?? []}
+                mealPlanEnabled={isPremium}
+                categories={categories}
+                selectedCategory={category}
+                onSelectCategory={(cat) => {
+                  setCategory(cat);
+                  scrollToBrowse();
+                }}
+              />
+            )}
+          </div>
+
+          {token && pantryStats && (
+            <PantryGlanceSection
+              stats={pantryStats}
+              coverage={recipeCoverage}
+              lastUpdated={pantryLastUpdatedAt}
+            />
+          )}
+
+          <section ref={browseRef} className="mt-12 scroll-mt-20">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div>
+                <h2 className="font-display text-2xl font-semibold italic text-stone-900 dark:text-stone-100">
+                  {t("home.seasonal.title")}
+                </h2>
+                <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+                  {browseLoading
+                    ? t("recipes.loadingRecipes")
+                    : t("home.recipesCount", { count: catalogTotal })}
+                </p>
+              </div>
+              <Link
+                to="/recipes"
+                className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+              >
+                {t("home.seasonal.allRecipes")} →
+              </Link>
+            </div>
+
+            {browseLoading ? (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: Math.min(pageSize, 6) }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-60 animate-pulse rounded-2xl border border-white/60 bg-white/60 dark:border-stone-700 dark:bg-stone-900/50"
+                  />
+                ))}
+              </div>
+            ) : visibleRecipes.length === 0 ? (
+              <div className="mt-6 rounded-2xl border border-dashed border-stone-200 bg-white/50 p-10 text-center text-sm text-stone-600 dark:border-stone-600 dark:bg-stone-900/50 dark:text-stone-400">
+                {favoritesOnly ? t("home.noFavorites") : t("home.noResults")}
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleRecipes.map((recipe, index) => (
+                  <div
+                    key={recipe.id}
+                    className="animate-slide-up"
+                    style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+                  >
+                    <BrowseRecipeCard
+                      recipe={recipe}
+                      match={matches?.get(recipe.id) ?? null}
+                      onOpen={handleOpen}
+                      onFavoriteChange={applyFavorite}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!browseLoading && (
+              <PaginationControls
+                page={page}
+                pages={pages}
+                total={catalogTotal}
+                onPageChange={setPage}
+                pageSize={pageSize}
+                pageSizeOptions={[...PAGE_SIZE_OPTIONS]}
+                onPageSizeChange={setPageSize}
+                label={t("recipes.pagination.recipes")}
+              />
+            )}
+          </section>
+
+          {!token && (
+            <section className="mt-14 overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-stone-900 to-stone-800 px-6 py-10 text-center text-white shadow-lg sm:px-12">
+              <h2 className="text-2xl font-bold sm:text-3xl">{t("home.footerCta")}</h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm text-stone-300">{t("home.footerCtaDesc")}</p>
+              <div className="mt-6 flex justify-center gap-3">
                 <Link to="/register">
+                  <Button size="lg">{t("nav.register")}</Button>
+                </Link>
+                <Link to="/login">
                   <Button size="lg" variant="secondary">
-                    {t("home.unlockAi")}
+                    {t("nav.signIn")}
                   </Button>
                 </Link>
               </div>
-            )}
-          </div>
-        </section>
-
-        {error && !browseLoading && (
-          <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
-            {translatedError}
-          </p>
-        )}
-
-        {/* "Use it up" rescue — recipes for pantry items about to expire (logged in). Hidden
-            entirely when nothing is expiring (RescueSection returns null). */}
-        {token && rescue && (
-          <RescueSection data={rescue} onOpen={handleOpen} onFavoriteChange={applyFavorite} />
-        )}
-
-        {/* "Today for you" personalized daily suggestions (logged in) */}
-        {token && today && (
-          <TodaySection data={today} onOpen={handleOpen} onFavoriteChange={applyFavorite} />
-        )}
-
-        {/* Recipe of the day */}
-        {recipeOfDay && (
-          <section className="mt-10">
-            <div className="mb-3">
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                {t("home.recipeOfDay")}
-              </h2>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                {t("home.recipeOfDayDesc")}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleOpen(recipeOfDay)}
-              className="group flex w-full flex-col items-stretch overflow-hidden rounded-3xl border border-white/60 bg-white/70 text-left shadow-sm backdrop-blur-md transition hover:shadow-lg dark:border-stone-700 dark:bg-stone-900/70 sm:flex-row"
-            >
-              <div
-                className={`relative flex items-center justify-center bg-gradient-to-br ${
-                  categoryVisual(recipeOfDay.category).gradient
-                } px-10 py-10 sm:w-64`}
-              >
-                <CategoryIconBadge
-                  category={recipeOfDay.category}
-                  size="xl"
-                  className="transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="flex flex-1 flex-col justify-center p-6">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block w-fit rounded-full bg-amber-100/80 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
-                    <TranslatedText text={recipeOfDay.category} />
-                  </span>
-                  {recipeOfDay.favorite_count > 0 && (
-                    <span className="inline-flex items-center gap-1 text-xs text-rose-500">
-                      ♥ {recipeOfDay.favorite_count}
-                    </span>
-                  )}
-                </div>
-                <h3 className="mt-2 text-2xl font-bold text-stone-900 dark:text-stone-100">
-                  <TranslatedText text={recipeOfDay.name} />
-                </h3>
-                <p className="mt-2 line-clamp-2 text-sm text-stone-600 dark:text-stone-400">
-                  <TranslatedText text={recipeOfDay.preparation} />
-                </p>
-                <span className="mt-4 text-sm font-medium text-amber-700 dark:text-amber-400">
-                  {t("home.viewRecipe")} →
-                </span>
-              </div>
-            </button>
-          </section>
-        )}
-
-        {/* Guest kitchen explorer */}
-        {!token && (
-          <section className="mt-10 rounded-3xl border border-white/60 bg-gradient-to-br from-white/80 to-amber-50/60 p-6 shadow-sm backdrop-blur-md dark:border-stone-700 dark:from-stone-900/80 dark:to-stone-800/60 sm:p-8">
-            <div className="flex items-start gap-3">
-              <span className="text-3xl" aria-hidden>
-                🧑‍🍳
-              </span>
-              <div>
-                <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                  {t("home.explorerTitle")}
-                </h2>
-                <p className="mt-1 max-w-2xl text-sm text-stone-600 dark:text-stone-400">
-                  {t("home.explorerDesc")}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <input
-                value={ingredientInput}
-                onChange={(e) => setIngredientInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === ",") {
-                    e.preventDefault();
-                    addIngredients(ingredientInput);
-                  }
-                }}
-                placeholder={t("home.explorerPlaceholder")}
-                className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/30 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
-              />
-              <Button onClick={() => addIngredients(ingredientInput)}>{t("home.explorerAdd")}</Button>
-              {myIngredients.length > 0 && (
-                <Button variant="ghost" onClick={() => setMyIngredients([])}>
-                  {t("home.explorerClear")}
-                </Button>
-              )}
-            </div>
-
-            {myIngredients.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {myIngredients.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex animate-fade-in items-center gap-1.5 rounded-full bg-amber-100/90 py-1 pl-3 pr-1.5 text-sm font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
-                  >
-                    {item}
-                    <button
-                      type="button"
-                      onClick={() => removeIngredient(item)}
-                      className="flex h-5 w-5 items-center justify-center rounded-full text-amber-700 transition hover:bg-amber-200/80 dark:text-amber-300 dark:hover:bg-amber-800/60"
-                      aria-label={t("common.delete")}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">{t("home.explorerHint")}</p>
-            )}
-
-            {myIngredients.length > 0 && (
-              <p className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                {t("home.sortBest")}
-              </p>
-            )}
-
-            <div className="mt-5 flex flex-col items-start justify-between gap-3 rounded-2xl bg-white/70 p-4 dark:bg-stone-900/60 sm:flex-row sm:items-center">
-              <p className="text-sm text-stone-600 dark:text-stone-400">{t("home.explorerCta")}</p>
-              <Link to="/register" className="shrink-0">
-                <Button>{t("home.explorerCtaButton")}</Button>
-              </Link>
-            </div>
-          </section>
-        )}
-
-        {/* Browse catalog */}
-        <section ref={browseRef} className="mt-12 scroll-mt-20">
-          <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-            {t("home.browseTitle")}
-          </h2>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            {browseLoading
-              ? t("recipes.loadingRecipes")
-              : t("home.recipesCount", { count: catalogTotal })}
-          </p>
-
-          {/* Category chips */}
-          {categories.length > 0 && (
-            <div className="mt-5">
-              <CategoryFilterChips
-                categories={categories}
-                selected={category}
-                onSelect={setCategory}
-                trailing={
-                  token ? (
-                    <button
-                      type="button"
-                      onClick={() => setFavoritesOnly((value) => !value)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
-                        favoritesOnly
-                          ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
-                          : "border border-stone-200 bg-white/70 text-stone-600 hover:border-rose-300 hover:text-stone-900 dark:border-stone-700 dark:bg-stone-900/60 dark:text-stone-300"
-                      }`}
-                    >
-                      <span aria-hidden>♥</span>
-                      {t("home.favoritesOnly", { count: favoriteCount })}
-                    </button>
-                  ) : undefined
-                }
-              />
-            </div>
+            </section>
           )}
-
-          {/* Grid */}
-          {browseLoading ? (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: Math.min(pageSize, 6) }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-60 animate-pulse rounded-2xl border border-white/60 bg-white/60 dark:border-stone-700 dark:bg-stone-900/50"
-                />
-              ))}
-            </div>
-          ) : visibleRecipes.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-dashed border-stone-200 bg-white/50 p-10 text-center text-sm text-stone-600 dark:border-stone-600 dark:bg-stone-900/50 dark:text-stone-400">
-              {favoritesOnly ? t("home.noFavorites") : t("home.noResults")}
-            </div>
-          ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {visibleRecipes.map((recipe, index) => (
-                <div
-                  key={recipe.id}
-                  className="animate-slide-up"
-                  style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
-                >
-                  <BrowseRecipeCard
-                    recipe={recipe}
-                    match={matches?.get(recipe.id) ?? null}
-                    onOpen={handleOpen}
-                    onFavoriteChange={applyFavorite}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!browseLoading && (
-            <PaginationControls
-              page={page}
-              pages={pages}
-              total={catalogTotal}
-              onPageChange={setPage}
-              pageSize={pageSize}
-              pageSizeOptions={[...PAGE_SIZE_OPTIONS]}
-              onPageSizeChange={setPageSize}
-              label={t("recipes.pagination.recipes")}
-            />
-          )}
-        </section>
-
-        {/* Footer CTA */}
-        {!token && (
-          <section className="mt-14 overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-stone-900 to-stone-800 px-6 py-10 text-center text-white shadow-lg sm:px-12">
-            <h2 className="text-2xl font-bold sm:text-3xl">{t("home.footerCta")}</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-stone-300">{t("home.footerCtaDesc")}</p>
-            <div className="mt-6 flex justify-center gap-3">
-              <Link to="/register">
-                <Button size="lg">{t("nav.register")}</Button>
-              </Link>
-              <Link to="/login">
-                <Button size="lg" variant="secondary">
-                  {t("nav.signIn")}
-                </Button>
-              </Link>
-            </div>
-          </section>
-        )}
         </main>
       </SceneBackground>
 

@@ -5,6 +5,7 @@ import { Checkbox, IconButton, Tooltip } from "@mui/material";
 import { Button } from "@/components/ui/Button";
 import { TranslatedText } from "@/components/TranslatedText";
 import { ingredientCategoryVisual } from "@/features/ingredients/lib/ingredientCategoryVisual";
+import { isExpired, isExpiringSoon } from "@/features/ingredients/lib/expiry";
 import type { Ingredient } from "@/features/ingredients/types/ingredient";
 
 interface IngredientCardProps {
@@ -23,17 +24,6 @@ function formatDate(iso: string | null, noExpiryLabel: string): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function isExpiringSoon(iso: string | null): boolean {
-  if (!iso) return false;
-  const diff = new Date(iso).getTime() - Date.now();
-  return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
-}
-
-function isExpired(iso: string | null): boolean {
-  if (!iso) return false;
-  return new Date(iso) < new Date(new Date().toDateString());
 }
 
 export function IngredientCard({

@@ -5,9 +5,13 @@
   },
   "nav": {
     "main": "Основна навигация",
+    "home": "Начало",
     "browse": "Разгледай",
     "recipes": "Рецепти",
     "pantry": "Килер",
+    "planner": "Планер",
+    "shopping": "Пазаруване",
+    "favorites": "Любими",
     "aiChef": "AI Готвач",
     "dashboard": "Табло",
     "ingredients": "Съставки",
@@ -42,6 +46,16 @@
     "explorerCtaButton": "Създай безплатен профил",
     "sortBest": "Показваме първо най-добрите ви съвпадения.",
     "matchLabel": "{{percent}}% съвпадение",
+    "matchCount": "{{have}}/{{total}} съвпадение",
+    "meta": {
+      "minutes": "{{count}} мин",
+      "kcal": "{{count}} ккал",
+      "difficulty": {
+        "easy": "Лесно",
+        "intermediate": "Средно",
+        "hard": "Трудно"
+      }
+    },
     "haveCount": "{{have}} от {{total}} съставки",
     "ingredientsCount_one": "{{count}} съставка",
     "ingredientsCount_other": "{{count}} съставки",
@@ -66,7 +80,106 @@
       "popular": "Популярен избор"
     },
     "footerCta": "Готови ли сте да готвите по-умно?",
-    "footerCtaDesc": "Създайте безплатен профил, за да изградите килера си, да добавяте съставки и да получавате персонализирани AI предложения за рецепти."
+    "footerCtaDesc": "Създайте безплатен профил, за да изградите килера си, да добавяте съставки и да получавате персонализирани AI предложения за рецепти.",
+    "heroEyebrow": "{{day}} · {{mood}}",
+    "headerSearchPlaceholder": "Намери рецепта или съставка…",
+    "pantrySubline": "Според текущия ви килер: {{items}} са на върха си днес.",
+    "moods": {
+      "morning": "Свежо начало",
+      "afternoon": "Обедна енергия",
+      "evening": "Златен час",
+      "night": "Тиха кухня"
+    },
+    "greetingLead": {
+      "morning": "Добро утро, {{name}}. Имате",
+      "afternoon": "Добър ден, {{name}}. Имате",
+      "evening": "Добър вечер, {{name}}. Имате",
+      "night": "Лека нощ, {{name}}. Имате"
+    },
+    "recipesReady_one": "{{count}} рецепта",
+    "recipesReady_other": "{{count}} рецепти",
+    "greetingTail": "готови за готвене.",
+    "pantryHealth": {
+      "title": "Здраве на килера",
+      "items_one": "{{count}} продукт",
+      "items_other": "{{count}} продукта",
+      "freshPercent": "{{percent}}% пресни",
+      "expiring48h_one": "{{count}} продукт изтича в следващите 48 часа",
+      "expiring48h_other": "{{count}} продукта изтичат в следващите 48 часа",
+      "noExpiring48h": "Нищо не изтича в следващите 48 часа.",
+      "openPantry": "Отвори килера"
+    },
+    "priorityUse": {
+      "title": "Приоритетно използване",
+      "viewAll": "Виж всички",
+      "noDate": "Без срок на годност",
+      "expired": "Изтекъл",
+      "expiresToday": "Изтича днес",
+      "expiresTomorrow": "Изтича утре",
+      "expiresInDays": "Изтича след {{count}} дни"
+    },
+    "cookNow": {
+      "title": "Готви сега от килера си",
+      "subtitle": "Рецепти, които можете да приготвите с наличните продукти.",
+      "seeAll": "Виж всички"
+    },
+    "sidebar": {
+      "todaysPlan": "План за днес",
+      "openPlanner": "Отвори планера",
+      "planUpsell": "Надградете до премиум, за да планирате храненията си.",
+      "unassigned": "Непланирано",
+      "quickCategories": "Бързи категории",
+      "slots": {
+        "breakfast": "Закуска",
+        "lunch": "Обяд",
+        "dinner": "Вечеря"
+      }
+    },
+    "glance": {
+      "title": "Килер накратко",
+      "exportPdf": "Експорт PDF",
+      "expiringSoon": "Изтича скоро",
+      "categoryBreakdown": "Разбивка по категории",
+      "recipeCoverage": "Покритие на рецепти",
+      "ready": "Готови",
+      "oneAway": "1 липсва",
+      "other": "Други",
+      "attentionNote_one": "{{count}} продукт изисква внимание скоро.",
+      "attentionNote_other": "{{count}} продукта изискват внимание скоро.",
+      "expiryWindows": {
+        "today": "Днес",
+        "oneTwo": "1–2д",
+        "threeSeven": "3–7д",
+        "eightPlus": "8+д"
+      },
+      "export": {
+        "totalItems": "Общо продукти",
+        "fresh": "Пресни",
+        "expiring48h": "Изтичат за 48 ч",
+        "snapshotAt": "Снимка на килера",
+        "lastUpdated": "Последна промяна",
+        "generatedBy": "Генерирано от",
+        "print": "Печат на отчета",
+        "generating": "Генериране на отчета…",
+        "successDownload": "PDF отчетът е изтеглен",
+        "successPrint": "Диалогът за печат е отворен",
+        "failed": "Неуспешно генериране на отчета за килера",
+        "popupBlocked": "Разрешете изскачащи прозорци, за да отпечатате отчета",
+        "expiryChartDesc": "Стълбовидна диаграма на продуктите по срок на годност: {{breakdown}}.",
+        "categoryChartDesc": "Разбивка по категории от {{total}} продукта в килера: {{breakdown}}.",
+        "coverageChartDesc": "Покритие на рецепти от килера и предложенията: {{breakdown}}."
+      }
+    },
+    "seasonal": {
+      "title": "Сезонни и препоръчани",
+      "allRecipes": "Всички рецепти"
+    }
+  },
+  "favorites": {
+    "pageTitle": "Вашите любими",
+    "pageSubtitle": "Рецептите, които запазите, ще се появят тук.",
+    "pageCount_one": "{{count}} запазена рецепта",
+    "pageCount_other": "{{count}} запазени рецепти"
   },
   "today": {
     "title": "Днес за вас",
