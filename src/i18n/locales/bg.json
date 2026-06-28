@@ -144,6 +144,7 @@
       "ready": "Готови",
       "oneAway": "1 липсва",
       "other": "Други",
+      "items": "Продукти",
       "attentionNote_one": "{{count}} продукт изисква внимание скоро.",
       "attentionNote_other": "{{count}} продукта изискват внимание скоро.",
       "expiryWindows": {

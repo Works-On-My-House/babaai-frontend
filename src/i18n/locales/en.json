@@ -144,6 +144,7 @@
       "ready": "Ready",
       "oneAway": "1 away",
       "other": "Other",
+      "items": "Items",
       "attentionNote_one": "{{count}} item needs attention soon.",
       "attentionNote_other": "{{count}} items need attention soon.",
       "expiryWindows": {

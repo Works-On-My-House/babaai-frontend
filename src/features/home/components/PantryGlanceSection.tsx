@@ -1,4 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -32,11 +39,73 @@ interface DonutSlice {
   label: string;
 }
 
+interface TooltipState {
+  x: number;
+  y: number;
+  title?: string;
+  color?: string;
+  label: string;
+  value: number;
+}
+
+function ChartTooltip({ tip }: { tip: TooltipState }) {
+  return (
+    <div
+      className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-stone-900/95 px-3 py-2 text-xs text-white shadow-lg ring-1 ring-black/10 dark:bg-stone-800"
+      style={{ left: tip.x, top: tip.y - 10 }}
+      role="tooltip"
+    >
+      {tip.title && <div className="mb-0.5 font-semibold">{tip.title}</div>}
+      <div className="flex items-center gap-2">
+        {tip.color && (
+          <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: tip.color }} />
+        )}
+        <span className="text-stone-300">{tip.label}</span>
+        <span className="ml-3 font-semibold tabular-nums">{tip.value}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Wrapper that positions a hover tooltip relative to the chart area. */
+function ChartCanvas({
+  description,
+  tip,
+  children,
+}: {
+  description: string;
+  tip: TooltipState | null;
+  children: ReactNode;
+}) {
+  return (
+    <div className="relative" role="img" aria-label={description}>
+      {children}
+      {tip && <ChartTooltip tip={tip} />}
+    </div>
+  );
+}
+
 function DonutChart({ slices, size = 100 }: { slices: DonutSlice[]; size?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<TooltipState | null>(null);
   const total = slices.reduce((sum, s) => sum + s.value, 0);
+
+  function showTip(event: ReactMouseEvent, slice: DonutSlice) {
+    if (!slice.label) return;
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    setTip({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      color: slice.color,
+      label: slice.label,
+      value: slice.value,
+    });
+  }
+
   if (total === 0) {
     return (
-      <svg width={size} height={size} viewBox="0 0 100 100" className="mx-auto" role="img" aria-hidden>
+      <svg width={size} height={size} viewBox="0 0 100 100" className="mx-auto" aria-hidden>
         <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="12" className="text-stone-200 dark:text-stone-700" />
       </svg>
     );
@@ -47,57 +116,93 @@ function DonutChart({ slices, size = 100 }: { slices: DonutSlice[]; size?: numbe
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" className="mx-auto" role="img" aria-hidden>
-      {slices.map((slice, i) => {
-        const fraction = slice.value / total;
-        const dash = fraction * circumference;
-        const offset = circumference * (1 - cumulative);
-        cumulative += fraction;
-        return (
-          <circle
-            key={i}
-            cx="50"
-            cy="50"
-            r={radius}
-            fill="none"
-            stroke={slice.color}
-            strokeWidth="12"
-            strokeDasharray={`${dash} ${circumference - dash}`}
-            strokeDashoffset={offset}
-            transform="rotate(-90 50 50)"
-          />
-        );
-      })}
-      <circle cx="50" cy="50" r="26" className="fill-white dark:fill-stone-900" />
-    </svg>
+    <div ref={ref} className="relative" onMouseLeave={() => setTip(null)}>
+      <svg width={size} height={size} viewBox="0 0 100 100" className="mx-auto" aria-hidden>
+        {slices.map((slice, i) => {
+          const fraction = slice.value / total;
+          const dash = fraction * circumference;
+          const offset = circumference * (1 - cumulative);
+          cumulative += fraction;
+          return (
+            <circle
+              key={i}
+              cx="50"
+              cy="50"
+              r={radius}
+              fill="none"
+              stroke={slice.color}
+              strokeWidth="12"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={offset}
+              transform="rotate(-90 50 50)"
+              style={{ cursor: "pointer" }}
+              onMouseEnter={(e) => showTip(e, slice)}
+              onMouseMove={(e) => showTip(e, slice)}
+            />
+          );
+        })}
+        <circle cx="50" cy="50" r="26" className="fill-white dark:fill-stone-900" />
+      </svg>
+      {tip && <ChartTooltip tip={tip} />}
+    </div>
   );
 }
 
-function BarChart({ bars, description }: { bars: { label: string; count: number; color: string }[]; description: string }) {
+function BarChart({
+  bars,
+  description,
+}: {
+  bars: { label: string; count: number; color: string }[];
+  description: string;
+}) {
+  const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<TooltipState | null>(null);
   const max = Math.max(...bars.map((b) => b.count), 1);
+
+  function showTip(event: ReactMouseEvent, bar: { label: string; count: number }) {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    setTip({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      title: bar.label,
+      label: t("home.glance.items"),
+      value: bar.count,
+    });
+  }
+
   return (
-    <div role="img" aria-label={description}>
-      <div className="flex h-24 items-end justify-between gap-2" aria-hidden>
-        {bars.map((bar) => (
-          <div key={bar.label} className="flex flex-1 flex-col items-center gap-1">
-            <div className="flex w-full flex-1 items-end">
-              <div
-                className="w-full rounded-t-md transition-all"
-                style={{
-                  height: `${Math.max((bar.count / max) * 100, bar.count > 0 ? 8 : 0)}%`,
-                  backgroundColor: bar.color,
-                  minHeight: bar.count > 0 ? 4 : 0,
-                }}
-              />
+    <ChartCanvas description={description} tip={null}>
+      <div ref={ref} className="relative" onMouseLeave={() => setTip(null)}>
+        <div className="flex h-24 items-end justify-between gap-2" aria-hidden>
+          {bars.map((bar) => (
+            <div
+              key={bar.label}
+              className="flex flex-1 cursor-pointer flex-col items-center gap-1"
+              onMouseEnter={(e) => showTip(e, bar)}
+              onMouseMove={(e) => showTip(e, bar)}
+            >
+              <div className="flex w-full flex-1 items-end">
+                <div
+                  className="w-full rounded-t-md transition-all"
+                  style={{
+                    height: `${Math.max((bar.count / max) * 100, bar.count > 0 ? 8 : 0)}%`,
+                    backgroundColor: bar.color,
+                    minHeight: bar.count > 0 ? 4 : 0,
+                  }}
+                />
+              </div>
+              <span className="text-center text-[10px] font-medium text-stone-500 dark:text-stone-400">
+                {bar.label}
+              </span>
+              <span className="text-xs font-bold text-stone-800 dark:text-stone-200">{bar.count}</span>
             </div>
-            <span className="text-center text-[10px] font-medium text-stone-500 dark:text-stone-400">
-              {bar.label}
-            </span>
-            <span className="text-xs font-bold text-stone-800 dark:text-stone-200">{bar.count}</span>
-          </div>
-        ))}
+          ))}
+        </div>
+        {tip && <ChartTooltip tip={tip} />}
       </div>
-    </div>
+    </ChartCanvas>
   );
 }
 
