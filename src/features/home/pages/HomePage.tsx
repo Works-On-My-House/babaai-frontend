@@ -100,7 +100,10 @@ export function HomePage() {
   const cookNowRef = useRef<HTMLDivElement>(null);
   const translatedError = useApiMessage(error);
 
-  const pantryItems = pantryQuery.data?.items ?? [];
+  const pantryItems = useMemo(
+    () => pantryQuery.data?.items ?? [],
+    [pantryQuery.data?.items],
+  );
   const pantryStats = useMemo(
     () => (token ? computePantryStats(pantryItems) : null),
     [token, pantryItems],

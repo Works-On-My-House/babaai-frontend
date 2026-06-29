@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { TranslatedText } from "@/components/TranslatedText";
 import { Button } from "@/components/ui/Button";
@@ -8,10 +9,14 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { CookedItButton } from "@/features/recipes/components/CookedItButton";
 import { FavoriteButton } from "@/features/recipes/components/FavoriteButton";
 import { CategoryIconBadge } from "@/features/recipes/components/CategoryIcon";
+import { StarRating } from "@/features/recipes/components/RecipeMeta";
 import { NutritionPanel } from "@/features/recipes/components/NutritionPanel";
 import { GenerateListButton } from "@/features/shoppingList/components/GenerateListButton";
 import { categoryVisual } from "@/features/recipes/lib/categoryVisuals";
+import { downloadRecipePdf } from "@/features/recipes/lib/exportRecipePdf";
 import type { GuestMatch } from "@/features/recipes/lib/guestMatch";
+import { getRecipeRating, parsePreparationSteps } from "@/features/recipes/lib/recipeCatalog";
+import { shareRecipe } from "@/features/recipes/lib/shareRecipe";
 import type { Recipe } from "@/features/recipes/types/recipe";
 
 interface RecipeDetailModalProps {
@@ -22,8 +27,52 @@ interface RecipeDetailModalProps {
 }
 
 export function RecipeDetailModal({ recipe, match, onClose, onFavoriteChange }: RecipeDetailModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { token } = useAuth();
+  const [busyAction, setBusyAction] = useState<"pdf" | "share" | null>(null);
+
+  const steps = useMemo(
+    () => (recipe ? parsePreparationSteps(recipe.preparation) : []),
+    [recipe],
+  );
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!recipe) return;
+    setBusyAction("pdf");
+    try {
+      downloadRecipePdf(
+        recipe,
+        {
+          ingredients: t("recipes.requiredIngredients"),
+          preparation: t("home.preparation"),
+          steps: t("recipes.detail.steps"),
+          nutrition: t("recipes.nutrition.title"),
+          calories: t("recipes.nutrition.calories"),
+          generatedBy: t("recipes.detail.generatedBy"),
+          exportedAt: t("recipes.detail.exportedAt"),
+        },
+        i18n.language,
+      );
+      toast.success(t("recipes.detail.pdfSuccess"));
+    } catch {
+      toast.error(t("recipes.detail.pdfFailed"));
+    } finally {
+      setBusyAction(null);
+    }
+  }, [recipe, t, i18n.language]);
+
+  const handleShare = useCallback(async () => {
+    if (!recipe) return;
+    setBusyAction("share");
+    try {
+      const result = await shareRecipe(recipe);
+      if (result === "shared") toast.success(t("recipes.detail.shareSuccess"));
+      else if (result === "copied") toast.success(t("recipes.detail.shareCopied"));
+      else toast.error(t("recipes.detail.shareFailed"));
+    } finally {
+      setBusyAction(null);
+    }
+  }, [recipe, t]);
 
   useEffect(() => {
     if (!recipe) return;
@@ -68,6 +117,9 @@ export function RecipeDetailModal({ recipe, match, onClose, onFavoriteChange }: 
             <h2 className="mt-1.5 text-2xl font-bold leading-tight drop-shadow-sm">
               <TranslatedText text={recipe.name} />
             </h2>
+            <div className="mt-2">
+              <StarRating rating={getRecipeRating(recipe)} />
+            </div>
           </div>
           <button
             type="button"
@@ -98,7 +150,23 @@ export function RecipeDetailModal({ recipe, match, onClose, onFavoriteChange }: 
                 {t("recipes.meta.favorites", { count: recipe.favorite_count })}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={busyAction != null}
+                onClick={() => void handleDownloadPdf()}
+              >
+                {busyAction === "pdf" ? t("recipes.detail.exportingPdf") : t("recipes.detail.downloadPdf")}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={busyAction != null}
+                onClick={() => void handleShare()}
+              >
+                {busyAction === "share" ? t("recipes.detail.sharing") : t("recipes.detail.share")}
+              </Button>
               {token && <CookedItButton recipeId={recipe.id} />}
               <FavoriteButton
                 recipeId={recipe.id}
@@ -153,11 +221,26 @@ export function RecipeDetailModal({ recipe, match, onClose, onFavoriteChange }: 
 
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-              {t("home.preparation")}
+              {steps.length > 1 ? t("recipes.detail.steps") : t("home.preparation")}
             </h3>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">
-              <TranslatedText text={recipe.preparation} />
-            </p>
+            {steps.length > 1 ? (
+              <ol className="space-y-3 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+                {steps.map((step, index) => (
+                  <li key={index} className="flex gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                      {index + 1}
+                    </span>
+                    <span className="pt-0.5">
+                      <TranslatedText text={step} />
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+                <TranslatedText text={recipe.preparation} />
+              </p>
+            )}
           </section>
 
           {!token && (

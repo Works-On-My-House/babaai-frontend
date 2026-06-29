@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 function sceneForPath(pathname: string): SceneKey | undefined {
   if (pathname.startsWith("/ingredients")) return "pantry";
   if (pathname.startsWith("/preferences")) return "taste";
+  if (pathname === "/recipes" || pathname === "/recipes/") return "recipe";
   return undefined;
 }
 

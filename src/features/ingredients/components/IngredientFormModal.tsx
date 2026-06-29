@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/Button";
@@ -61,7 +61,7 @@ export function IngredientFormModal({
   const { t } = useTranslation();
   const isEdit = ingredient != null;
   const { config, loading: configLoading, error: configError } = useAppConfig();
-  const units = config?.ingredient_units ?? [];
+  const units = useMemo(() => config?.ingredient_units ?? [], [config?.ingredient_units]);
   const [form, setForm] = useState<FormState>(emptyForm(units[0] ?? "pcs"));
   const [errors, setErrors] = useState<FormErrors>({});
   const { category: inferredCategory, loading: inferringCategory } = useInferCategory(
