@@ -27,6 +27,11 @@ function sceneFilter(scene: SceneKey, isDark: boolean): string {
       ? "brightness(0.35) saturate(0.7) contrast(1.1)"
       : "brightness(1) saturate(1.05)";
   }
+  if (scene === "recipe") {
+    return isDark
+      ? "brightness(0.38) saturate(0.75) contrast(1.05)"
+      : "brightness(1.02) saturate(1.04)";
+  }
   return isDark
     ? "brightness(0.42) saturate(0.78) contrast(1.05)"
     : "brightness(1.02) saturate(1.06) contrast(1.02)";
@@ -37,6 +42,12 @@ function sceneOverlay(scene: SceneKey, isDark: boolean): string {
     return isDark
       ? "from-stone-950/70 via-stone-900/40 to-stone-950/75"
       : "from-white/25 via-white/10 to-amber-50/30";
+  }
+  if (scene === "recipe") {
+    // Stronger wash so recipe cards stay legible over the photo.
+    return isDark
+      ? "from-stone-950/80 via-stone-950/68 to-stone-950/85"
+      : "from-white/70 via-white/55 to-amber-50/65";
   }
   return isDark
     ? "from-stone-950/50 via-stone-900/15 to-stone-950/60"
@@ -70,8 +81,8 @@ export function SceneBackground({ scene, children, className = "" }: SceneBackgr
       const viewH = window.innerHeight - headerHeightPx();
       const maxPan = Math.max(0, scaledHeight - viewH);
 
-      // Cover scenes (pantry, taste) fill the viewport — skip pan padding to avoid layout jitter.
-      if (scene === "pantry" || scene === "taste") {
+      // Cover scenes (pantry, taste, recipe) fill the viewport — skip pan padding to avoid layout jitter.
+      if (scene === "pantry" || scene === "taste" || scene === "recipe") {
         if (scrollPadRef.current !== 0) {
           scrollPadRef.current = 0;
           setScrollPad(0);
@@ -111,7 +122,7 @@ export function SceneBackground({ scene, children, className = "" }: SceneBackgr
   }, [scaledHeight, scene]);
 
   // Cover scenes fill the viewport at center; others pan vertically with scroll.
-  const isCover = scene === "pantry" || scene === "taste";
+  const isCover = scene === "pantry" || scene === "taste" || scene === "recipe";
 
   const imageStyle: CSSProperties = {
     top: HEADER_OFFSET,

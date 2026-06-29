@@ -10,13 +10,16 @@ import type { Recipe } from "@/features/recipes/types/recipe";
 interface BrowseRecipeCardProps {
   recipe: Recipe;
   match?: GuestMatch | null;
+  /** When set, overrides derived placeholder rating (Recipes page uses 0.0). */
+  rating?: number;
   onOpen: (recipe: Recipe) => void;
   onFavoriteChange?: (recipeId: string, isFavorite: boolean, favoriteCount: number) => void;
 }
 
-export function BrowseRecipeCard({ recipe, match, onOpen, onFavoriteChange }: BrowseRecipeCardProps) {
+export function BrowseRecipeCard({ recipe, match, rating, onOpen, onFavoriteChange }: BrowseRecipeCardProps) {
   const visual = categoryVisual(recipe.category);
   const meta = deriveRecipeMeta(recipe);
+  const displayRating = rating ?? meta.rating;
   const matchCounts = matchCountsFromGuest(match);
 
   return (
@@ -65,7 +68,7 @@ export function BrowseRecipeCard({ recipe, match, onOpen, onFavoriteChange }: Br
             <TranslatedText text={recipe.name} />
           </h3>
           <span className="mt-0.5 shrink-0">
-            <StarRating rating={meta.rating} />
+            <StarRating rating={displayRating} />
           </span>
         </div>
         <p className="mt-1.5 line-clamp-2 flex-1 text-sm text-stone-600 dark:text-stone-400">
